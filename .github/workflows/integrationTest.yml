@@ -616,3 +616,24 @@ jobs:
           timeout_minutes: 8
           retry_wait_seconds: 5
           command: cd integration/terraform/ecs/linux && terraform destroy --auto-approve
+
+  PerformanceTrackingTest:
+    name: "PerformanceTrackingTest"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: integration/test/performance_tracker
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.TERRAFORM_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.TERRAFORM_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      - name: RunTest
+        run: >
+          go run mainTest.go
+
