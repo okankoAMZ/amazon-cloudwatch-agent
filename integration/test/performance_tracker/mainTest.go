@@ -1,4 +1,4 @@
-package performancetracker
+package main
 import "fmt"
 
 func main(){
