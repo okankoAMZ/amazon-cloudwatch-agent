@@ -1,6 +1,10 @@
+//go:build linux && integration
+// +build linux,integration
 package performance_tracker
-import "fmt"
+import (
+	"testing"
+)
 
-func TestPerformanceTracker(){
-	fmt.Println("Hello World")
+func TestPerformanceTracker(t * testing.T){
+	t.Log("Hello World")
 }
