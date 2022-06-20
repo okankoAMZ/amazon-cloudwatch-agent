@@ -1,6 +1,6 @@
-package main
+package performance_tracker
 import "fmt"
 
-func main(){
+func TestPerformanceTracker(){
 	fmt.Println("Hello World")
 }

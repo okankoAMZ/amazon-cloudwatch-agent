@@ -635,5 +635,5 @@ jobs:
 
       - name: RunTest
         run: >
-          go run mainTest.go
+          go test performance_tracker
 
