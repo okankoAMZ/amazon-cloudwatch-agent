@@ -657,7 +657,7 @@ jobs:
             terraform init
             if terraform apply --auto-approve \
               -var="ssh_key=${PRIVATE_KEY}" -var="github_repo=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" \
-              -var="github_sha=${GITHUB_SHA}" -var="install_agent=${{ }}" \
+              -var="github_sha=${GITHUB_SHA}" -var="install_agent=rpm -U ./amazon-cloudwatch-agent.rpm" \
               -var="user=ec2-user" \
               -var="ami=cloudwatch-agent-integration-test-al2*" \
               -var="ca_cert_path=/etc/ssl/certs/ca-bundle.crt" \
