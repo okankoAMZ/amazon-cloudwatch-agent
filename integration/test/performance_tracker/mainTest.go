@@ -3,6 +3,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"testing"
 )
@@ -10,4 +11,10 @@ import (
 func TestPerformanceTracker(t * testing.T){
 	t.Log("Hello World")
 	t.Log("Hash", os.Getenv("SHA"))
+}
+
+
+func main(){
+	fmt.Println("Hello World")
+	fmt.Println("Hash", os.Getenv("SHA"))
 }
