@@ -705,6 +705,6 @@ jobs:
 
         - name: the test
           id: localstack
-          run: >
+          run: |
             export SHA=${{ steps.vars.outputs.sha_short }}
             go test -run TestPerformanceTracker
