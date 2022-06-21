@@ -655,6 +655,7 @@ jobs:
           command: |
             cd integration/terraform/ec2/linux
             export $SHA = ${var.github_sha}
+            go test -run TestPerformanceTracker
             # terraform init
             # if terraform apply --auto-approve \
             #   -var="ssh_key=${PRIVATE_KEY}" -var="github_repo=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" \
