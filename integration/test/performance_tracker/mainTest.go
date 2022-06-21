@@ -9,5 +9,5 @@ import (
 
 func TestPerformanceTracker(t * testing.T){
 	t.Log("Hello World")
-	t.log("Hash", os.Getenv("SHA"))
+	t.Log("Hash", os.Getenv("SHA"))
 }
