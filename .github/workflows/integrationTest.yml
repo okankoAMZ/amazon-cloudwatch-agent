@@ -702,9 +702,13 @@ jobs:
             aws-access-key-id: ${{ secrets.TERRAFORM_AWS_ACCESS_KEY_ID }}
             aws-secret-access-key: ${{ secrets.TERRAFORM_AWS_SECRET_ACCESS_KEY }}
             aws-region: us-west-2
-
+        - name: Set outputs
+          id: vars
+          run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+        - name: Check outputs
+          run: echo ${{ steps.vars.outputs.sha_short }}
         - name: the test
           id: localstack
           run: |
-            export SHA=${var.github_sha}
+            export SHA=${{ steps.vars.outputs.sha_short }}
             go run mainTest.go
