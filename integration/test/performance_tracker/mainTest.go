@@ -1,6 +1,6 @@
 //go:build linux && integration
 // +build linux,integration
-package performance_tracker
+package main
 
 import (
 	"os"
