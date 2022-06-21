@@ -5,18 +5,20 @@ import (
 	"fmt"
 	"math"
 	"time"
+	"context"
+	"errors"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/session"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbiface"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
-const(
-	TIME_CONSTANT = 300.0 // this const is in seconds , 5 mins
-)
+const METRIC_PERIOD= 300.0 // this const is in seconds , 5 mins
+
 type TransmitterAPI struct{
-	DynamoDbClient dynamodbiface.DynamoDBAPI
+	dynamoDbClient dynamodbiface.DynamoDBAPI
 	DataBaseName      string // this is the name of the table when test is run
 }
 // this is the packet that will be sent converted to DynamoItem
@@ -36,20 +38,20 @@ type collectorData []struct{ // this is the struct data collector passes in
 	Values []float64	`json:Values`
 }
 
-
 /*
 InitializeTransmitterAPI
 Desc: Initializes the transmitter class
-Side effects: Can create a dynamodb table
+Side effects: Creates a dynamodb table if it doesn't already exist
 */
 func InitializeTransmitterAPI(DataBaseName string) * TransmitterAPI{
-	transmitter := new(TransmitterAPI)
 	//setup aws session
 	session := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
-	transmitter.DynamoDbClient =  dynamodb.New(session)
-	transmitter.DataBaseName = DataBaseName //fmt.Sprintf("%d",int(time.Now().UnixNano()))
+	transmitter := TransmitterAPI{
+		dynamoDbClient: dynamodb.new(session),
+		DataBaseName:	DataBaseName,
+	}
 	// check if the dynamo table exist if not create it
 	tableExist, err:= transmitter.TableExist()
 	if err !=nil{
@@ -59,19 +61,16 @@ func InitializeTransmitterAPI(DataBaseName string) * TransmitterAPI{
 		fmt.Println("Table doesn't exist")
 		err := transmitter.CreateTable()
 		if err != nil{
-			fmt.Println("Couldn't create table")
 			return nil
 		}
 	}
 	fmt.Println("API ready")
-	return transmitter
+	return &transmitter
 
 }
 /*
 CreateTable()
 Desc: Will create a DynamoDB Table with given param. and config
-Params:
-Side Effects: Creates a dynamoDB table
 */
 func (transmitter * TransmitterAPI) CreateTable() error{
 	input := &dynamodb.CreateTableInput{
@@ -94,9 +93,9 @@ func (transmitter * TransmitterAPI) CreateTable() error{
 		TableName: aws.String(transmitter.DataBaseName),
 	} // this is the config for the new table
 	
-	_, err := transmitter.DynamoDbClient.CreateTable(input)
+	_, err := transmitter.dynamoDbClient.CreateTable(input)
 	if err != nil {
-		fmt.Printf("Got error calling CreateTable: %s", err)
+		fmt.Printf("Error calling CreateTable: %s", err)
 		return err
 	}
 	
@@ -113,22 +112,17 @@ Side effects:
 	Adds an item to dynamodb table
 */
 func (transmitter * TransmitterAPI) AddItem(packet map[string]interface{})(string,error){
-	// fmt.Printf("Packet: %+v \n",packet)
-	// metrics, _ := dynamodbattribute.MarshalMap(packet.Metrics)
-	// fmt.Printf("Metric: %+v \n OG:%+v \n",metrics, packet.Metrics)
 	item, err := dynamodbattribute.MarshalMap(packet)
 	if err != nil {
 		panic(err)
 	}
-	DBitem := &dynamodb.PutItemInput{
+	dbItem := &dynamodb.PutItemInput{
 		Item:      item,
 		TableName: aws.String(transmitter.DataBaseName),
 	}
-	// fmt.Println(DBitem)
-	// return err
-	_, err = transmitter.DynamoDbClient.PutItem(DBitem)
+	_, err = transmitter.dynamoDbClient.PutItem(dbItem)
 	if err != nil {
-		fmt.Printf("Couldn't add item to table. Here's why: %v\n", err)
+		fmt.Printf("Error adding item to table.  %v\n", err)
 	}
 	return fmt.Sprintf("%v",item),err
 }
@@ -138,24 +132,37 @@ Desc: Checks if the the table exist and returns the value
 //https://github.com/awsdocs/aws-doc-sdk-examples/blob/05a89da8c2f2e40781429a7c34cf2f2b9ae35f89/gov2/dynamodb/actions/table_basics.go
 */
 func (transmitter * TransmitterAPI) TableExist() (bool,error){
-	l,err := transmitter.ListTables()
-	for i:=0; i< len(l); i++{
-		if transmitter.DataBaseName == l[i]{
-			return true,nil
+	// l,err := transmitter.ListTables()
+	// for i:=0; i< len(l); i++{
+	// 	if transmitter.DataBaseName == l[i]{
+	// 		return true,nil
+	// 	}
+	// }
+	// return false,err
+	exists := true
+	_, err := transmitter.dynamoDbClient.DescribeTable(
+		context.TODO(), &dynamodb.DescribeTableInput{TableName: aws.String(transmitter.DataBaseName)},
+	)
+	if err != nil {
+		var notFoundEx *types.ResourceNotFoundException
+		if errors.As(err, &notFoundEx) {
+			fmt.Printf("Table %v does not exist.\n", transmitter.DataBaseName)
+			err = nil
+		} else {
+			fmt.Printf("Couldn't determine existence of table %v. Here's why: %v\n",transmitter.DataBaseName, err)
 		}
+		exists = false
 	}
-	return false,err
-
+	return exists, err
 }
 /*
 RemoveTable()
 Desc: Removes the table that was craeted with initialization. 
-Side effects: Removes a Dynamodb table
 */
 func (transmitter * TransmitterAPI) RemoveTable() error{
 	input := dynamodb.DeleteTableInput{TableName: aws.String(transmitter.DataBaseName)}
 
-	_,err:=transmitter.DynamoDbClient.DeleteTable(&input)
+	_,err:=transmitter.dynamoDbClient.DeleteTable(&input)
 	if err !=nil{
 		fmt.Println(err)
 	}
@@ -165,10 +172,10 @@ func (transmitter * TransmitterAPI) RemoveTable() error{
 func (transmitter * TransmitterAPI) ListTables() ([]string, error) {
 	var tableNames []string
 	input := &dynamodb.ListTablesInput{}
-	tables, err := transmitter.DynamoDbClient.ListTables(
+	tables, err := transmitter.dynamoDbClient.ListTables(
 		input)
 	if err != nil {
-		fmt.Printf("Couldn't list tables. Here's why: %v\n", err)
+		fmt.Printf("Error listing tables: %v\n", err)
 	} else {
 		for  i:=0; i< len(tables.TableNames); i++{
 			tableNames =  append(tableNames,*tables.TableNames[i])
@@ -177,7 +184,11 @@ func (transmitter * TransmitterAPI) ListTables() ([]string, error) {
 	}
 	return tableNames, err
 }
-
+/*
+SendItem()
+Desc: Parses the input data and adds it to the dynamo table
+Param: data []byte is the data collected by data collector 
+*/
 func (transmitter * TransmitterAPI) SendItem(data []byte) (string,error) {
 	// return nil
 	packet, err := transmitter.Parser(data)
@@ -195,11 +206,13 @@ func (transmitter * TransmitterAPI) Parser(data []byte) (map[string]interface{},
 		return nil,err
 	}
 	packet := make(map[string]interface{})
-	//temp solution
+	//@TODO: add git integration temp solution
 	packet["Hash"] = fmt.Sprintf("%d",time.Now().UnixNano())
+	packet["CommitDate"] = fmt.Sprintf("%d",time.Now().UnixNano())
 	/// will remove
 	for _,rawMetricData:= range dataHolder{
 		numDataPoints := float64(len(rawMetricData.Timestamps))
+		// @TODO: Export this part to GetMetricStatistics after merging with data collection code
 		sum :=0.0
 		for _,val := range rawMetricData.Values {
 			sum += val
@@ -210,28 +223,14 @@ func (transmitter * TransmitterAPI) Parser(data []byte) (map[string]interface{},
 		for _,val := range rawMetricData.Values{
 			diffSum = diffSum +  (avg - val)
 		}
-		
+		//----------------
 		metric := Metric{
 			Average: avg,
 			StandardDev: math.Sqrt(math.Pow(diffSum,2)/float64(numDataPoints)),
-			Period: int(TIME_CONSTANT/(numDataPoints)),
+			Period: int(METRIC_PERIOD/(numDataPoints)),
 			Data:  rawMetricData.Values}
-		// fmt.Printf("%+v\n",metric)
-		// packet.Metrics[rawMetricData.Label] = metric
 		packet[rawMetricData.Label] = metric
-
-		
 	}
 	return packet,nil
 }
 
-func testFiller(testname string) * TransmitterAPI{
-	transmitter := new(TransmitterAPI)
-	//setup aws session
-	session := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}))
-	transmitter.DynamoDbClient =  dynamodb.New(session)
-	transmitter.DataBaseName = testname
-	return transmitter
-}
