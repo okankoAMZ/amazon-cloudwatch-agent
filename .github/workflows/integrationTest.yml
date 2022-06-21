@@ -690,7 +690,7 @@ jobs:
       runs-on: ubuntu-latest
       defaults:
         run:
-          working-directory: integration/terraform/ec2/localstack
+          working-directory: integration/test/performance_tracker
       outputs:
         local_stack_host_name: ${{ steps.localstack.outputs.local_stack_host_name }}
       steps:
