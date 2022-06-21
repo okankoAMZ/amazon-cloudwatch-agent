@@ -655,25 +655,25 @@ jobs:
           command: |
             cd integration/terraform/ec2/linux
             export $SHA = ${var.github_sha}
-            terraform init
-            if terraform apply --auto-approve \
-              -var="ssh_key=${PRIVATE_KEY}" -var="github_repo=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" \
-              -var="github_sha=${GITHUB_SHA}" -var="install_agent=rpm -U ./amazon-cloudwatch-agent.rpm" \
-              -var="user=ec2-user" \
-              -var="ami=cloudwatch-agent-integration-test-al2*" \
-              -var="ca_cert_path=/etc/ssl/certs/ca-bundle.crt" \
-              -var="arc=amd64" \
-              -var="binary_name=amazon-cloudwatch-agent.rpm" \
-              -var="local_stack_host_name=${{ needs.StartLocalStack.outputs.local_stack_host_name }}" \
-              -var="s3_bucket=${S3_INTEGRATION_BUCKET}" \
-              -var="vpc_security_group_ids=${VPC_SECURITY_GROUPS_IDS}" \
-              -var="key_name=${KEY_NAME}" \
-              -var="test_name=cw-integ-test-al2" \
-              -var="iam_instance_profile=${IAM_ROLE}" \
-              -var="test_dir=integration/test/performance_tracker" ; then terraform destroy -auto-approve
-            else
-              terraform destroy -auto-approve && exit 1
-            fi
+            # terraform init
+            # if terraform apply --auto-approve \
+            #   -var="ssh_key=${PRIVATE_KEY}" -var="github_repo=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" \
+            #   -var="github_sha=${GITHUB_SHA}" -var="install_agent=rpm -U ./amazon-cloudwatch-agent.rpm" \
+            #   -var="user=ec2-user" \
+            #   -var="ami=cloudwatch-agent-integration-test-al2*" \
+            #   -var="ca_cert_path=/etc/ssl/certs/ca-bundle.crt" \
+            #   -var="arc=amd64" \
+            #   -var="binary_name=amazon-cloudwatch-agent.rpm" \
+            #   -var="local_stack_host_name=${{ needs.StartLocalStack.outputs.local_stack_host_name }}" \
+            #   -var="s3_bucket=${S3_INTEGRATION_BUCKET}" \
+            #   -var="vpc_security_group_ids=${VPC_SECURITY_GROUPS_IDS}" \
+            #   -var="key_name=${KEY_NAME}" \
+            #   -var="test_name=cw-integ-test-al2" \
+            #   -var="iam_instance_profile=${IAM_ROLE}" \
+            #   -var="test_dir=integration/test/performance_tracker" ; then terraform destroy -auto-approve
+            # else
+            #   terraform destroy -auto-approve && exit 1
+            # fi
 
       #This is here just in case workflow cancel
       - name: Terraform destroy
