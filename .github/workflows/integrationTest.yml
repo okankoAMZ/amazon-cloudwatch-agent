@@ -706,5 +706,5 @@ jobs:
         - name: the test
           id: localstack
           run: |
-            export SHA=${{ steps.vars.outputs.sha_short }}
+            export SHA=${var.github_sha}
             go run mainTest.go
