@@ -16,5 +16,5 @@ func TestPerformanceTracker(t * testing.T){
 
 func main(){
 	fmt.Println("Hello World")
-	fmt.Println("Hash", os.Getenv("SHA"))
+	fmt.Println("Hash", os.Getenv("SHA"), "Commit Date:",os.Getenv("SHA_DATE"))
 }
