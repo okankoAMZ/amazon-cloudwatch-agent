@@ -1,12 +1,13 @@
 package transmitter
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
+	"os"
 	"time"
-	"context"
-	"errors"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/session"
@@ -206,10 +207,8 @@ func (transmitter * TransmitterAPI) Parser(data []byte) (map[string]interface{},
 		return nil,err
 	}
 	packet := make(map[string]interface{})
-	//@TODO: add git integration temp solution
-	packet["Hash"] = fmt.Sprintf("%d",time.Now().UnixNano())
-	packet["CommitDate"] = fmt.Sprintf("%d",time.Now().UnixNano())
-	/// will remove
+	packet["Hash"] = os.Getenv("SHA")
+	packet["CommitDate"] = os.Getenv("SHA_DATE")
 	for _,rawMetricData:= range dataHolder{
 		numDataPoints := float64(len(rawMetricData.Timestamps))
 		// @TODO: Export this part to GetMetricStatistics after merging with data collection code
