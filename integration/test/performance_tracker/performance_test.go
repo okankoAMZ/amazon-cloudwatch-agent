@@ -15,6 +15,7 @@ const (
 	configPath = "resources/config.json"
 	configOutputPath = "/opt/aws/amazon-cloudwatch-agent/bin/config.json"
 	agentRuntimeMinutes = 20
+
 )
 
 func TestPerformance(t *testing.T) {
@@ -33,9 +34,9 @@ func TestPerformance(t *testing.T) {
 	test.StopAgent()
 
 	//collect data
-	data, err := GetPerformanceMetrics(instanceId, agentRuntime, agentContext)
+	data, err := GetPerformanceMetrics(instanceId, agentRuntimeMinutes, agentContext)
 	if err != nil {
-		log.Println("Error: " + err)
+		log.Println("Error: ", err)
 		t.Fatalf("Error: %v", err)
 	}
 
