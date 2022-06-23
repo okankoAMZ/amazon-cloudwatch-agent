@@ -116,6 +116,8 @@ jobs:
           echo ${{ steps.set-matrix.outputs.ec2_linux_matrix }}
           echo ${{ steps.set-matrix.outputs.ec2_windows_matrix }}
           echo ${{ steps.set-matrix.outputs.ecs_fargate_matrix }}
+      - name: TEMP TEST LOOKUP
+        run: echo "${{ matrix.arrays.test_dir}}"
 
   StartLocalStack:
     name: 'StartLocalStack'
@@ -211,8 +213,6 @@ jobs:
 
       - name: Echo Test Info
         run: echo run performance-tracking
-      -name: TEMP TEST LOOKUP
-        run: echo "${{ matrix.arrays.test_dir}}"
       - name: Verify Terraform version
         run: terraform --version
       - name: Get SHA
