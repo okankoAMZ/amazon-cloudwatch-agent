@@ -229,6 +229,8 @@ jobs:
           timeout_minutes: 50
           retry_wait_seconds: 5
           command: |
+            export SHA=${{ steps.sha.outputs.sha_short }}
+            export SHA_DATE=${{ steps.sha_date.outputs.sha_date }}
             cd integration/terraform/ec2/linux
             terraform init
             if terraform apply --auto-approve \
