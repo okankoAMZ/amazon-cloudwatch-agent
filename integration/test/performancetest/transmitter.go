@@ -199,15 +199,20 @@ func (transmitter *TransmitterAPI) Parser(data []byte) (map[string]interface{}, 
 	}
 	packet := make(map[string]interface{})
 	//@TODO: add git integration temp solution
-	packet["Hash"] = fmt.Sprintf("%d", time.Now().UnixNano())
-	packet["CommitDate"] = fmt.Sprintf("%d", time.Now().UnixNano())
+	packet["Hash"] =  os.Getenv("SHA") //fmt.Sprintf("%d", time.Now().UnixNano())
+	packet["CommitDate"] = os.Getenv("SHA_DATE")//fmt.Sprintf("%d", time.Now().UnixNano())
 	/// will remove
 	for _, rawMetricData := range dataHolder {
 		numDataPoints := float64(len(rawMetricData.Timestamps))
 		// @TODO:ADD GetMetricStatistics after merging with data collection code
+		sum :=0.0
+		for _,val := range rawMetricData.Values {
+			sum += val
+		}
+		avg :=  sum /numDataPoints
 		//----------------
 		metric := Metric{
-			Average: 0.0,
+			Average: avg,
 			Max:     100.0,
 			Min:     0.0,
 			P99:     0.0,
