@@ -1,0 +1,59 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT
+
+name: Run Integration Tests
+env:
+  PRIVATE_KEY: ${{ secrets.AWS_PRIVATE_KEY  }}
+  TERRAFORM_AWS_ACCESS_KEY_ID: ${{ secrets.TERRAFORM_AWS_ACCESS_KEY_ID }}
+  TERRAFORM_AWS_SECRET_ACCESS_KEY: ${{ secrets.TERRAFORM_AWS_SECRET_ACCESS_KEY }}
+  S3_INTEGRATION_BUCKET: ${{ secrets.S3_INTEGRATION_BUCKET }}
+  KEY_NAME: ${{ secrets.KEY_NAME }}
+  VPC_SECURITY_GROUPS_IDS: ${{ secrets.VPC_SECURITY_GROUPS_IDS }}
+  IAM_ROLE: ${{ secrets.IAM_ROLE }}
+  GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+  PASSPHRASE: ${{ secrets.PASSPHRASE }}
+  GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
+  GPG_TTY: $(tty)
+  ECR_INTEGRATION_TEST_REPO: "cwagent-integration-test"
+
+on:
+  push:
+    branches:
+      - workflow
+    
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  NonTerraformTest:
+      name: 'DummySHATest'
+      runs-on: ubuntu-latest
+      defaults:
+        run:
+          working-directory: integration/test/performance_tracker
+      outputs:
+        local_stack_host_name: ${{ steps.localstack.outputs.local_stack_host_name }}
+      steps:
+        - uses: actions/checkout@v2
+
+        - name: Configure AWS Credentials
+          uses: aws-actions/configure-aws-credentials@v1
+          with:
+            aws-access-key-id: ${{ secrets.TERRAFORM_AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.TERRAFORM_AWS_SECRET_ACCESS_KEY }}
+            aws-region: us-west-2
+        - name: Get SHA
+          id: sha
+          run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+        - name: Get git date
+          id: sha_date
+          run: echo "::set-output name=sha_date::$(git show -s --format=%ct ${{ steps.sha.outputs.sha_short }} )"
+        - name: MainTestRun
+          id: MainTestRUn
+          run: |
+            export SHA=${{ steps.sha.outputs.sha_short }}
+            export SHA_DATE=${{ steps.sha_date.outputs.sha_date }}
+            go test -run TestPerformance

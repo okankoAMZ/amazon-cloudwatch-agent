@@ -1,5 +1,5 @@
-//go:build linux && integration
-// +build linux,integration
+//// go:build linux && integration
+//// +build linux,integration
 
 package performancetest
 
