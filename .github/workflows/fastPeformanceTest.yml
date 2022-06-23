@@ -56,4 +56,4 @@ jobs:
           run: |
             export SHA=${{ steps.sha.outputs.sha_short }}
             export SHA_DATE=${{ steps.sha_date.outputs.sha_date }}
-            go test-p 1 -v --tags="integration"
+            go test -p 1 -v --tags="integration"
