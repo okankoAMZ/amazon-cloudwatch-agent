@@ -211,7 +211,8 @@ jobs:
 
       - name: Echo Test Info
         run: echo run performance-tracking
-
+      -name: TEMP TEST LOOKUP
+        run: echo ${{ matrix.arrays.test_dir }}"
       - name: Verify Terraform version
         run: terraform --version
       - name: Get SHA
