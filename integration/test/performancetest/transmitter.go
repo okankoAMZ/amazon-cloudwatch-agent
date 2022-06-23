@@ -103,7 +103,7 @@ func (transmitter *TransmitterAPI) CreateTable() error {
 		fmt.Printf("Error calling CreateTable: %s", err)
 		return err
 	}
-
+	time.Sleep(10*time.Second)
 	fmt.Println("Created the table", transmitter.DataBaseName)
 	return nil
 }
