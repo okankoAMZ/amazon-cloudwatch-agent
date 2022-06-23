@@ -8,7 +8,6 @@ import(
 	"time"
 	"log"
 	"context"
-
 	"github.com/aws/amazon-cloudwatch-agent/integration/test"
 )
 
@@ -18,7 +17,7 @@ const (
 	agentRuntimeMinutes = 20
 )
 
-func PerformanceTest(t *testing.T) {
+func TestPerformance(t *testing.T) {
 	agentContext := context.TODO()
 	instanceId := test.GetInstanceId()
 	log.Printf("Instance ID used for performance metrics : %s\n", instanceId)
@@ -41,6 +40,7 @@ func PerformanceTest(t *testing.T) {
 	}
 
 	//------Placeholder to put data into database------//
+
 	//useless code so data get used and compiler isn't mad
 	if data == nil {
 		t.Fatalf("No data")
