@@ -29,7 +29,7 @@ resource "aws_instance" "integration-test" {
       "echo run sanity test && go test ./integration/test/sanity -p 1 -v --tags=integration",
       "export SHA=${var.sha}",
       "export SHA_DATE=${var.sha_date}",
-      "go test ${var.test_dir} -p 1 -v --tags=integration"
+      "go test ${var.test_dir} -p 1 -timeout 30m -v --tags=integration "
     ]
     connection {
       type        = "ssh"
