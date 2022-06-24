@@ -20,6 +20,7 @@ on:
   push:
     branches:
       - master
+      - cleanWorkflow
     
   workflow_dispatch:
 
