@@ -220,6 +220,8 @@ jobs:
       - name: Get git date
         id: sha_date
         run: echo "::set-output name=sha_date::$(git show -s --format=%ct ${{ steps.sha.outputs.sha_short }} )"
+      - name: Check env
+        run: echo "SHA ${{ steps.sha.outputs.sha_short }} | Date ${{ steps.sha_date.outputs.sha_date }} "
       # nick-invision/retry@v2 starts at base dir
       - name: Terraform apply
         if: steps.performance-tracking.outputs.cache-hit != 'true'
