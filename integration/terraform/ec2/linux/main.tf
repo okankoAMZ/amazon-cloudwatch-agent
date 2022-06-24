@@ -6,6 +6,7 @@ resource "aws_instance" "integration-test" {
   vpc_security_group_ids = var.vpc_security_group_ids
   provisioner "remote-exec" {
     inline = [
+      "echo sha ${var.sha}",
       "cloud-init status --wait",
       "echo clone and install agent",
       "export PATH=$PATH:/usr/local/go/bin",
@@ -26,7 +27,9 @@ resource "aws_instance" "integration-test" {
       "echo run tests with the tag integration, one at a time, and verbose",
       "cd ~/amazon-cloudwatch-agent",
       "echo run sanity test && go test ./integration/test/sanity -p 1 -v --tags=integration",
-      "go test ${var.test_dir} -p 1 -v --tags=integration"
+      "export SHA=${var.sha}",
+      "export SHA_DATE=${var.sha_date}",
+      "go test ${var.test_dir} -p 1 -timeout 30m -v --tags=integration "
     ]
     connection {
       type        = "ssh"
