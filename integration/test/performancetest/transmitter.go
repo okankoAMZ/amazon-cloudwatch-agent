@@ -199,7 +199,7 @@ func (transmitter *TransmitterAPI) Parser(data []byte) (map[string]interface{}, 
 	}
 	packet := make(map[string]interface{})
 	//@TODO: add git integration temp solution
-	fmt.Println(os.Getenv("SHA"),os.Getenv("SHA_DATE"))
+	fmt.Println("SHA:",os.Getenv("SHA"),"DATE:",os.Getenv("SHA_DATE"))
 	packet["Hash"] =  os.Getenv("SHA") //fmt.Sprintf("%d", time.Now().UnixNano())
 	packet["CommitDate"] = os.Getenv("SHA_DATE")//fmt.Sprintf("%d", time.Now().UnixNano())
 	/// will remove
