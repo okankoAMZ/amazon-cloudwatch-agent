@@ -247,9 +247,10 @@ jobs:
               -var="key_name=${KEY_NAME}" \
               -var="test_name=cw-integ-test-al2" \
               -var="iam_instance_profile=${IAM_ROLE}" \
+              -var="sha=${{ steps.sha.outputs.sha_short }}" \
+              -var="sha_date=${{ steps.sha_date.outputs.sha_date }}" \
               -var="test_dir=./integration/test/performancetest" ; then terraform destroy -auto-approve
-              -var="sha=${{ steps.sha.outputs.sha_short }}"
-              -var="sha_date=${{ steps.sha_date.outputs.sha_date }}"
+
             else
               terraform destroy -auto-approve && exit 1
             fi

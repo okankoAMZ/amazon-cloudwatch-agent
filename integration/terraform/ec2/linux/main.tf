@@ -6,6 +6,7 @@ resource "aws_instance" "integration-test" {
   vpc_security_group_ids = var.vpc_security_group_ids
   provisioner "remote-exec" {
     inline = [
+      "echo sha ${var.sha}",
       "cloud-init status --wait",
       "echo clone and install agent",
       "export PATH=$PATH:/usr/local/go/bin",
