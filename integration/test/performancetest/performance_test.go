@@ -14,7 +14,7 @@ import(
 const (
 	configPath = "resources/config.json"
 	configOutputPath = "/opt/aws/amazon-cloudwatch-agent/bin/config.json"
-	agentRuntimeMinutes = 10 //20 def
+	agentRuntimeMinutes = 5 //20 def
 
 )
 
