@@ -15,7 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
-const METRIC_PERIOD = 300.0 // this const is in seconds , 5 mins
+const METRIC_PERIOD = agentRuntimeMinutes * 60 // this const is in seconds , 5 mins
 
 type TransmitterAPI struct {
 	dynamoDbClient *dynamodb.Client
