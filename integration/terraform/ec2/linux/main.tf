@@ -9,8 +9,6 @@ resource "aws_instance" "integration-test" {
       "cloud-init status --wait",
       "echo clone and install agent",
       "export PATH=$PATH:/usr/local/go/bin",
-      "export SHA=${var.sha}",
-      "export SHA_DATE=${var.sha_date}",
       "git clone ${var.github_repo}",
       "cd amazon-cloudwatch-agent",
       "git reset --hard ${var.github_sha}",
@@ -28,6 +26,8 @@ resource "aws_instance" "integration-test" {
       "echo run tests with the tag integration, one at a time, and verbose",
       "cd ~/amazon-cloudwatch-agent",
       "echo run sanity test && go test ./integration/test/sanity -p 1 -v --tags=integration",
+      "export SHA=${var.sha}",
+      "export SHA_DATE=${var.sha_date}",
       "go test ${var.test_dir} -p 1 -v --tags=integration"
     ]
     connection {
