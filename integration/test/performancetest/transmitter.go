@@ -92,6 +92,10 @@ func (transmitter *TransmitterAPI) CreateTable() error {
 					AttributeName: aws.String("Hash"),
 					KeyType:       types.KeyTypeHash,
 				},
+				{
+					AttributeName: aws.String("CommitDate"),
+					KeyType:	   types.KeyTypeRange,
+				},
 			},
 			ProvisionedThroughput: &types.ProvisionedThroughput{
 				ReadCapacityUnits:  aws.Int64(10),
