@@ -187,6 +187,7 @@ func (transmitter *TransmitterAPI) SendItem(data []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	fmt.Printf("%+v",packet)
 	sentItem, err := transmitter.AddItem(packet)
 	return sentItem, err
 }
@@ -201,7 +202,7 @@ func (transmitter *TransmitterAPI) Parser(data []byte) (map[string]interface{}, 
 	//@TODO: add git integration temp solution
 	fmt.Println("SHA:",os.Getenv("SHA"),"DATE:",os.Getenv("SHA_DATE"))
 	packet["Hash"] =  os.Getenv("SHA") //fmt.Sprintf("%d", time.Now().UnixNano())
-	packet["CommitDate"] = os.Getenv("SHA_DATE")//fmt.Sprintf("%d", time.Now().UnixNano())
+	packet["CommitDate"] = fmt.Sprintf("%d",  os.Getenv("SHA_DATE"))
 	/// will remove
 	for _, rawMetricData := range dataHolder {
 		numDataPoints := float64(len(rawMetricData.Timestamps))
