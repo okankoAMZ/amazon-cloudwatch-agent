@@ -101,6 +101,24 @@ func (transmitter *TransmitterAPI) CreateTable() error {
 					KeyType:	   types.KeyTypeRange,
 				},
 			},
+			GlobalSecondaryIndexes: []types.GlobalSecondaryIndex{
+				{
+					IndexName: aws.String("CommitDate-index"),
+					KeySchema: []types.KeySchemaElement{
+						{
+							AttributeName: aws.String("CommitDate"),
+							KeyType:       types.KeyTypeHash,
+						},
+					},
+					Projection: &types.Projection{
+						ProjectionType : "ALL",
+					},
+					ProvisionedThroughput: &types.ProvisionedThroughput{
+						ReadCapacityUnits:  aws.Int64(10),
+						WriteCapacityUnits: aws.Int64(10),
+					},
+				},
+			},
 			ProvisionedThroughput: &types.ProvisionedThroughput{
 				ReadCapacityUnits:  aws.Int64(10),
 				WriteCapacityUnits: aws.Int64(10),
@@ -111,10 +129,18 @@ func (transmitter *TransmitterAPI) CreateTable() error {
 		fmt.Printf("Error calling CreateTable: %s", err)
 		return err
 	}
-	time.Sleep(10*time.Second)
+	// time.Sleep(10*time.Second) //@Todo add buffer check instead of sleep before final product.
+	//https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GettingStarted.CreateTable.html
+	waiter := dynamodb.NewTableExistsWaiter(transmitter.dynamoDbClient)
+		err = waiter.Wait(context.TODO(), &dynamodb.DescribeTableInput{
+			TableName: aws.String(transmitter.DataBaseName)}, 5* time.Minute)
+		if err != nil {
+			log.Printf("Wait for table exists failed. Here's why: %v\n", err)
+	}
 	fmt.Println("Created the table", transmitter.DataBaseName)
 	return nil
 }
+
 
 /*
 AddItem()
