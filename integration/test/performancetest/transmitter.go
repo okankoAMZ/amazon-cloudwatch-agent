@@ -89,7 +89,7 @@ func (transmitter *TransmitterAPI) CreateTable() error {
 				},
 				{
 					AttributeName: aws.String("CommitDate"),
-					AttributeType: types.ScalarAttributeTypeS,
+					AttributeType: types.ScalarAttributeTypeN,
 				},
 			},
 			KeySchema: []types.KeySchemaElement{
