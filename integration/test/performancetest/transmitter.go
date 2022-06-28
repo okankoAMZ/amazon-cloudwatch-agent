@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"time"
+	"strconv"
 	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -16,8 +17,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
-const METRIC_PERIOD = agentRuntimeMinutes * 60 // this const is in seconds , 5 mins
-
+const (
+	METRIC_PERIOD = agentRuntimeMinutes * 60 // this const is in seconds , 5 mins
+	HASH = "Hash"
+	COMMIT_DATE= "CommitDate"
+	SHA_ENV  = "SHA"
+	SHA_DATE_ENV = "SHA_DATE"
+)
 type TransmitterAPI struct {
 	dynamoDbClient *dynamodb.Client
 	DataBaseName   string // this is the name of the table when test is run
@@ -49,7 +55,7 @@ Side effects: Creates a dynamodb table if it doesn't already exist
 */
 func InitializeTransmitterAPI(DataBaseName string) *TransmitterAPI {
 	//setup aws session
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(os.Getenv("AWS_REGION")))
+	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		fmt.Printf("Error: Loading in config %s\n", err)
 	}
@@ -73,13 +79,12 @@ func InitializeTransmitterAPI(DataBaseName string) *TransmitterAPI {
 	return &transmitter
 
 }
-
 /*
 CreateTable()
 Desc: Will create a DynamoDB Table with given param. and config
 */
  //add secondary index space vs time  
-func (transmitter *TransmitterAPI) CreateTable() error {
+ func (transmitter *TransmitterAPI) CreateTable() error {
 	_, err := transmitter.dynamoDbClient.CreateTable(
 		context.TODO(), &dynamodb.CreateTableInput{
 			AttributeDefinitions: []types.AttributeDefinition{
@@ -141,8 +146,6 @@ func (transmitter *TransmitterAPI) CreateTable() error {
 	fmt.Println("Created the table", transmitter.DataBaseName)
 	return nil
 }
-
-
 /*
 AddItem()
 Desc: Takes in a packet and
@@ -174,13 +177,6 @@ Desc: Checks if the the table exist and returns the value
 //https://github.com/awsdocs/aws-doc-sdk-examples/blob/05a89da8c2f2e40781429a7c34cf2f2b9ae35f89/gov2/dynamodb/actions/table_basics.go
 */
 func (transmitter *TransmitterAPI) TableExist() (bool, error) {
-	// l,err := transmitter.ListTables()
-	// for i:=0; i< len(l); i++{
-	// 	if transmitter.DataBaseName == l[i]{
-	// 		return true,nil
-	// 	}
-	// }
-	// return false,err
 	exists := true
 	_, err := transmitter.dynamoDbClient.DescribeTable(
 		context.TODO(), &dynamodb.DescribeTableInput{TableName: aws.String(transmitter.DataBaseName)},
@@ -191,25 +187,13 @@ func (transmitter *TransmitterAPI) TableExist() (bool, error) {
 			fmt.Printf("Table %v does not exist.\n", transmitter.DataBaseName)
 			err = nil
 		} else {
-			fmt.Printf("Couldn't determine existence of table %v. Here's why: %v\n", transmitter.DataBaseName, err)
+			fmt.Printf("Couldn't determine existence of table %v. Error: %v\n", transmitter.DataBaseName, err)
 		}
 		exists = false
 	}
 	return exists, err
 }
 
-/*
-RemoveTable()
-Desc: Removes the table that was craeted with initialization.
-*/
-func (transmitter *TransmitterAPI) RemoveTable() error {
-	_, err := transmitter.dynamoDbClient.DeleteTable(context.TODO(),
-		&dynamodb.DeleteTableInput{TableName: aws.String(transmitter.DataBaseName)})
-	if err != nil {
-		fmt.Println(err)
-	}
-	return err
-}
 
 /*
 SendItem()
@@ -235,14 +219,15 @@ func (transmitter *TransmitterAPI) Parser(data []byte) (map[string]interface{}, 
 	}
 	packet := make(map[string]interface{})
 
-	packet["Hash"] =  os.Getenv("SHA") //fmt.Sprintf("%d", time.Now().UnixNano())
-	packet["CommitDate"] =os.Getenv("SHA_DATE")
-	/// will remove
+	packet[HASH] =  os.Getenv(SHA_ENV) //fmt.Sprintf("%d", time.Now().UnixNano())
+	packet[COMMIT_DATE],_ = strconv.Atoi(os.Getenv(SHA_DATE_ENV))
+	
 	for _, rawMetricData := range dataHolder {
 		numDataPoints := float64(len(rawMetricData.Timestamps))
 		var avg float64
 		if numDataPoints <= 0{
 			avg = 0.0
+			log.Fatalf("Error there is no data points")
 		}else{
 			// @TODO:ADD GetMetricStatistics after merging with data collection code
 			sum :=0.0
