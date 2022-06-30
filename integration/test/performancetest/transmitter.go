@@ -211,8 +211,8 @@ func (transmitter *TransmitterAPI) Parser(data []byte) (map[string]interface{}, 
 	for _, rawMetricData := range dataHolder {
 		numDataPoints := float64(len(rawMetricData.Timestamps))
 		var avg float64
-		var max float64
-		var min float64
+		max := 0.0
+		min := 10000.0
 		if numDataPoints <= 0{
 			avg = 0.0
 			max = 0.0
