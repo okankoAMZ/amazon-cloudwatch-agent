@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"os"
 	"time"
 	"strconv"
@@ -18,7 +19,8 @@ import (
 )
 
 const (
-	METRIC_PERIOD = agentRuntimeMinutes * 60 // this const is in seconds , 5 mins
+	METRIC_PERIOD = 5 * 60 // this const is in seconds , 5 mins
+	PARTITION_KEY ="Year"
 	HASH = "Hash"
 	COMMIT_DATE= "CommitDate"
 	SHA_ENV  = "SHA"
@@ -36,6 +38,7 @@ type Metric struct {
 	Max     float64
 	Min     float64
 	Period  int //in seconds
+	Std 	float64
 	Data    []float64
 }
 
@@ -55,7 +58,7 @@ Side effects: Creates a dynamodb table if it doesn't already exist
 */
 func InitializeTransmitterAPI(DataBaseName string) *TransmitterAPI {
 	//setup aws session
-	cfg, err := config.LoadDefaultConfig(context.TODO())
+	cfg, err := config.LoadDefaultConfig(context.TODO(),config.WithRegion("us-west-2"))
 	if err != nil {
 		fmt.Printf("Error: Loading in config %s\n", err)
 	}
@@ -79,18 +82,19 @@ func InitializeTransmitterAPI(DataBaseName string) *TransmitterAPI {
 	return &transmitter
 
 }
+
 /*
 CreateTable()
 Desc: Will create a DynamoDB Table with given param. and config
 */
  //add secondary index space vs time  
- func (transmitter *TransmitterAPI) CreateTable() error {
+func (transmitter *TransmitterAPI) CreateTable() error {
 	_, err := transmitter.dynamoDbClient.CreateTable(
 		context.TODO(), &dynamodb.CreateTableInput{
 			AttributeDefinitions: []types.AttributeDefinition{
 				{
-					AttributeName: aws.String("Hash"),
-					AttributeType: types.ScalarAttributeTypeS,
+					AttributeName: aws.String(PARTITION_KEY),
+					AttributeType: types.ScalarAttributeTypeN,
 				},
 				{
 					AttributeName: aws.String("CommitDate"),
@@ -99,7 +103,7 @@ Desc: Will create a DynamoDB Table with given param. and config
 			},
 			KeySchema: []types.KeySchemaElement{
 				{
-					AttributeName: aws.String("Hash"),
+					AttributeName: aws.String(PARTITION_KEY),
 					KeyType:       types.KeyTypeHash,
 				},
 				{
@@ -107,24 +111,7 @@ Desc: Will create a DynamoDB Table with given param. and config
 					KeyType:	   types.KeyTypeRange,
 				},
 			},
-			GlobalSecondaryIndexes: []types.GlobalSecondaryIndex{
-				{
-					IndexName: aws.String("CommitDate-index"),
-					KeySchema: []types.KeySchemaElement{
-						{
-							AttributeName: aws.String("CommitDate"),
-							KeyType:       types.KeyTypeHash,
-						},
-					},
-					Projection: &types.Projection{
-						ProjectionType : "ALL",
-					},
-					ProvisionedThroughput: &types.ProvisionedThroughput{
-						ReadCapacityUnits:  aws.Int64(10),
-						WriteCapacityUnits: aws.Int64(10),
-					},
-				},
-			},
+
 			ProvisionedThroughput: &types.ProvisionedThroughput{
 				ReadCapacityUnits:  aws.Int64(10),
 				WriteCapacityUnits: aws.Int64(10),
@@ -135,7 +122,6 @@ Desc: Will create a DynamoDB Table with given param. and config
 		fmt.Printf("Error calling CreateTable: %s", err)
 		return err
 	}
-	// time.Sleep(10*time.Second) //@Todo add buffer check instead of sleep before final product.
 	//https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GettingStarted.CreateTable.html
 	waiter := dynamodb.NewTableExistsWaiter(transmitter.dynamoDbClient)
 		err = waiter.Wait(context.TODO(), &dynamodb.DescribeTableInput{
@@ -146,6 +132,7 @@ Desc: Will create a DynamoDB Table with given param. and config
 	fmt.Println("Created the table", transmitter.DataBaseName)
 	return nil
 }
+
 /*
 AddItem()
 Desc: Takes in a packet and
@@ -206,11 +193,10 @@ func (transmitter *TransmitterAPI) SendItem(data []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	fmt.Printf("%+v",packet)
+	// fmt.Printf("%+v",packet)
 	sentItem, err := transmitter.AddItem(packet)
 	return sentItem, err
 }
-
 func (transmitter *TransmitterAPI) Parser(data []byte) (map[string]interface{}, error) {
 	dataHolder := collectorData{}
 	err := json.Unmarshal(data, &dataHolder)
@@ -218,30 +204,42 @@ func (transmitter *TransmitterAPI) Parser(data []byte) (map[string]interface{}, 
 		return nil, err
 	}
 	packet := make(map[string]interface{})
-
+	packet[PARTITION_KEY] = time.Now().Year()
 	packet[HASH] =  os.Getenv(SHA_ENV) //fmt.Sprintf("%d", time.Now().UnixNano())
 	packet[COMMIT_DATE],_ = strconv.Atoi(os.Getenv(SHA_DATE_ENV))
 	
 	for _, rawMetricData := range dataHolder {
 		numDataPoints := float64(len(rawMetricData.Timestamps))
 		var avg float64
+		var max float64
+		var min float64
 		if numDataPoints <= 0{
 			avg = 0.0
+			max = 0.0
+			min = 0.0
 			log.Fatalf("Error there is no data points")
 		}else{
 			// @TODO:ADD GetMetricStatistics after merging with data collection code
 			sum :=0.0
 			for _,val := range rawMetricData.Values {
 				sum += val
+				if max < val{
+					max = val
+				}
+				if min > val {
+					min = val
+				}
 			}
+			
 			avg =  sum /numDataPoints
 		}
 		//----------------
 		metric := Metric{
 			Average: avg,
-			Max:     100.0,
-			Min:     0.0,
+			Max:     max,
+			Min:     min,
 			P99:     0.0,
+			Std: 	rand.Float64(),
 			Period:  int(METRIC_PERIOD / (numDataPoints)),
 			Data:    rawMetricData.Values}
 		packet[rawMetricData.Label] = metric
