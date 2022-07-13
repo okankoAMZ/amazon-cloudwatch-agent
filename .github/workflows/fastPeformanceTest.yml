@@ -29,6 +29,7 @@ concurrency:
 
 jobs:
   MakeBinary:
+    needs: [ GenerateTestMatrix]]
     name: 'MakeBinary'
     runs-on: ubuntu-latest
     steps:
