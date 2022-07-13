@@ -27,7 +27,7 @@ var osToTestDirMap = map[string][]string{
 	},
 	// @TODO add real tests
 	//@TODO add new dict, and specify performancetest instead of ca_bundle
-	"ec2_performance_test":{
+	"ec2_performance":{
 		"./integration/test/performancetest",
 	},
 	"ec2_windows": {""},
