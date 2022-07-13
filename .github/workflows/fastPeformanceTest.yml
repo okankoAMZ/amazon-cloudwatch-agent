@@ -123,7 +123,7 @@ jobs:
       - name: Echo performance matrix
         run: |
           echo ${{ steps.set-matrix.output.ec2_performance_matrix}}
-          echo ${{cat integration/generator/resources/ec2_performance_complete_test_matrix.json}}
+          cat integration/generator/resources/ec2_performance_complete_test_matrix.json
 
   StartLocalStack:
     name: 'StartLocalStack'
