@@ -96,3 +96,7 @@ variable "sha_date"{
   type = string
   default = ""
 }
+variable "performance_number_of_logs"{
+  type = string
+  default = ""
+}

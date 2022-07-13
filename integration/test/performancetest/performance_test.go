@@ -8,6 +8,7 @@ import(
 	"time"
 	"log"
 	"context"
+	"os"
 	"github.com/aws/amazon-cloudwatch-agent/integration/test"
 )
 
@@ -26,7 +27,7 @@ func TestPerformance(t *testing.T) {
 	test.CopyFile(configPath, configOutputPath)
 
 	test.StartAgent(configOutputPath, true)
-
+	fmt.Println("N_Logs",os.Getenv("PERFORMANCE_NUMBER_OF_LOGS"))
 	agentRunDuration := agentRuntimeMinutes * time.Minute
 	//let agent run before collecting performance metrics on it
 	time.Sleep(agentRunDuration)
