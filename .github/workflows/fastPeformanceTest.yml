@@ -117,12 +117,12 @@ jobs:
       - name: Echo test plan matrix
         run: |
           echo ${{ steps.set-matrix.outputs.ec2_linux_matrix }}
-          echo ${{ steps.set-matrix.output.ec2_performance_matrix}}
+          echo ${{ steps.set-matrix.outputs.ec2_performance_matrix}}
           # echo ${{ steps.set-matrix.outputs.ec2_windows_matrix }}
           # echo ${{ steps.set-matrix.outputs.ecs_fargate_matrix }}
       - name: Echo performance matrix
         run: |
-          echo ${{ steps.set-matrix.output.ec2_performance_matrix}}
+          echo ${{ steps.set-matrix.outputs.ec2_performance_matrix}}
           cat integration/generator/resources/ec2_performance_complete_test_matrix.json
 
   StartLocalStack:
