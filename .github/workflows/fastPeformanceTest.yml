@@ -29,7 +29,6 @@ concurrency:
 
 jobs:
   MakeBinary:
-    needs: [ GenerateTestMatrix]
     name: 'MakeBinary'
     runs-on: ubuntu-latest
     steps:
@@ -94,7 +93,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       ec2_linux_matrix: ${{ steps.set-matrix.outputs.ec2_linux_matrix }}
-      ec2_performance_matrix: ${{steps.set-matrix.output.ec2_performance_matrix}}
+      ec2_performance_matrix: ${{steps.set-matrix.outputs.ec2_performance_matrix}}
       ec2_windows_matrix: ${{ steps.set-matrix.outputs.ec2_windows_matrix }}
       ecs_fargate_matrix: ${{ steps.set-matrix.outputs.ecs_fargate_matrix }}
     steps:
@@ -111,19 +110,18 @@ jobs:
           go run --tags=generator integration/generator/test_case_generator.go
           echo "::set-output name=ec2_linux_matrix::$(echo $(cat integration/generator/resources/ec2_linux_complete_test_matrix.json))"
           echo "::set-output name=ec2_performance_matrix::$(echo $(cat integration/generator/resources/ec2_performance_complete_test_matrix.json))"
-          # echo "::set-output name=ec2_windows_matrix::$(echo $(cat integration/generator/resources/ec2_windows_complete_test_matrix.json))"
-          # echo "::set-output name=ecs_fargate_matrix::$(echo $(cat integration/generator/resources/ecs_fargate_complete_test_matrix.json))"
+          echo "::set-output name=ec2_windows_matrix::$(echo $(cat integration/generator/resources/ec2_windows_complete_test_matrix.json))"
+          echo "::set-output name=ecs_fargate_matrix::$(echo $(cat integration/generator/resources/ecs_fargate_complete_test_matrix.json))"
 
       - name: Echo test plan matrix
         run: |
           echo ${{ steps.set-matrix.outputs.ec2_linux_matrix }}
           echo ${{ steps.set-matrix.outputs.ec2_performance_matrix}}
-          # echo ${{ steps.set-matrix.outputs.ec2_windows_matrix }}
-          # echo ${{ steps.set-matrix.outputs.ecs_fargate_matrix }}
+          echo ${{ steps.set-matrix.outputs.ec2_windows_matrix }}
+          echo ${{ steps.set-matrix.outputs.ecs_fargate_matrix }}
       - name: Echo performance matrix
         run: |
           echo ${{ steps.set-matrix.outputs.ec2_performance_matrix}}
-          cat integration/generator/resources/ec2_performance_complete_test_matrix.json
 
   StartLocalStack:
     name: 'StartLocalStack'
