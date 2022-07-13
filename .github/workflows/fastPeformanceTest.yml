@@ -93,6 +93,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       ec2_linux_matrix: ${{ steps.set-matrix.outputs.ec2_linux_matrix }}
+      ec2_performance_matrix: ${{step.set-matrix.output.ec2_performancetest_matrix}}
       ec2_windows_matrix: ${{ steps.set-matrix.outputs.ec2_windows_matrix }}
       ecs_fargate_matrix: ${{ steps.set-matrix.outputs.ecs_fargate_matrix }}
     steps:
@@ -108,12 +109,14 @@ jobs:
         run: |
           go run --tags=generator integration/generator/test_case_generator.go
           echo "::set-output name=ec2_linux_matrix::$(echo $(cat integration/generator/resources/ec2_linux_complete_test_matrix.json))"
+          echo "::set-output name=ec2_performancetest_matrix::${{echo $(cat integration/generator/resources/ec2_performancetest_matrx.json)}}"
           echo "::set-output name=ec2_windows_matrix::$(echo $(cat integration/generator/resources/ec2_windows_complete_test_matrix.json))"
           echo "::set-output name=ecs_fargate_matrix::$(echo $(cat integration/generator/resources/ecs_fargate_complete_test_matrix.json))"
 
       - name: Echo test plan matrix
         run: |
           echo ${{ steps.set-matrix.outputs.ec2_linux_matrix }}
+          echo ${{ steps.set-matrix.output.ec2_performancetest_matrix}}
           echo ${{ steps.set-matrix.outputs.ec2_windows_matrix }}
           echo ${{ steps.set-matrix.outputs.ecs_fargate_matrix }}
 
@@ -193,6 +196,10 @@ jobs:
     name: "PerformanceTrackingTest"
     needs: [MakeBinary, StartLocalStack, GenerateTestMatrix]
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arrays: ${{ fromJson(needs.GenerateTestMatrix.outputs.ec2_performancetest_matrix) }}
     steps:
       - uses: actions/checkout@v2
 

@@ -26,6 +26,10 @@ var osToTestDirMap = map[string][]string{
 		"./integration/test/metrics_number_dimension",
 	},
 	// @TODO add real tests
+	//@TODO add new dict, and specify performancetest instead of ca_bundle
+	"ec2_performance_test":{
+		"./integration/test/performancetest",
+	},
 	"ec2_windows": {""},
 	"ec2_mac":     {},
 	"ecs_fargate": {
