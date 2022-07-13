@@ -93,7 +93,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       ec2_linux_matrix: ${{ steps.set-matrix.outputs.ec2_linux_matrix }}
-      ec2_performance_matrix: ${{step.set-matrix.output.ec2_performancetest_matrix}}
+      ec2_performance_matrix: ${{steps.set-matrix.output.ec2_performancetest_matrix}}
       ec2_windows_matrix: ${{ steps.set-matrix.outputs.ec2_windows_matrix }}
       ecs_fargate_matrix: ${{ steps.set-matrix.outputs.ecs_fargate_matrix }}
     steps:
