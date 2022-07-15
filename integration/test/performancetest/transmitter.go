@@ -284,7 +284,7 @@ func (transmitter * TransmitterAPI) UpdateReleaseTag(hash string) error{
 		return errors.New("Hash not in dynamo")
 	}
 	commitDate := fmt.Sprintf("%d",int(item[0]["CommitDate"].(float64)))
-	year := fmt.Sprintf("%d",item[0]["Year"])
+	year := fmt.Sprintf("%d",int(item[0]["Year"].(float64)))
 	fmt.Println(commitDate)
 	_, err = transmitter.dynamoDbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
         TableName: aws.String(transmitter.DataBaseName),
