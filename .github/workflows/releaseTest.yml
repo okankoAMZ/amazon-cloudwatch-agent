@@ -39,9 +39,8 @@ jobs:
           go-version: ~1.18.3
       - name: "Set the Hash var"
         run: "export SHA=$GITHUB_SHA"
-      - name: "Set release var"
-        run: "export IS_RELEASE=true"
       - name: Run Golang Update Function
         run: |
             cd integration/test/performancetest
+            export IS_RELEASE=true
             go test -run TestUpdateCommit -p 1 -v --tags=integration IS_RELEASE=true
