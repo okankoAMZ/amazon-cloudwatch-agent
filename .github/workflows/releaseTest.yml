@@ -30,6 +30,7 @@ jobs:
   UpdatePerformanceMetrics:
     name: "UpdatePerformanceMetrics"
     runs-on: ubuntu-latest
+    uses: nick-invision/retry@v2
     steps:
       - name: "Set the Hash var"
         run: "export SHA=$GITHUB_SHA"
