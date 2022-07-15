@@ -278,7 +278,12 @@ func (transmitter *TransmitterAPI) Parser(data []byte) (map[string]interface{}, 
 */
 func (transmitter * TransmitterAPI) UpdateReleaseTag(year int, hash string) error{
 	var err error
+	fmt.Println("Updating:",year, "hash:",hash)
 	item,err := transmitter.Query(year,hash)
+	if len(item) ==0{
+		fmt.Println(item)
+		return errors.New("Hash not in dynamo")
+	}
 	commitDate := fmt.Sprintf("%d",int(item[0]["CommitDate"].(float64)))
 	fmt.Println(commitDate)
 	_, err = transmitter.dynamoDbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
