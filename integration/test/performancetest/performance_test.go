@@ -70,5 +70,5 @@ func TestUpdateCommit(t*testing.T){
 	return
 	}
 	//@TODO figure out how to get date
-	dynamoDB.UpdateReleaseTag(2022,testHash)
+	dynamoDB.UpdateReleaseTag(testHash)
 }

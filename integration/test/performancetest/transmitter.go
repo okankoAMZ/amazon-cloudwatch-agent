@@ -276,20 +276,20 @@ func (transmitter *TransmitterAPI) Parser(data []byte) (map[string]interface{}, 
 /*
 
 */
-func (transmitter * TransmitterAPI) UpdateReleaseTag(year int, hash string) error{
+func (transmitter * TransmitterAPI) UpdateReleaseTag(hash string) error{
 	var err error
-	fmt.Println("Updating:",year, "hash:",hash)
-	item,err := transmitter.Query(year,hash)
+	fmt.Println("Updating:",hash)
+	item,err := transmitter.Query(hash)
 	if len(item) ==0{
-		fmt.Println(item)
 		return errors.New("Hash not in dynamo")
 	}
 	commitDate := fmt.Sprintf("%d",int(item[0]["CommitDate"].(float64)))
+	year := fmt.Sprintf("%d",item[0]["Year"])
 	fmt.Println(commitDate)
 	_, err = transmitter.dynamoDbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
         TableName: aws.String(transmitter.DataBaseName),
         Key: map[string]types.AttributeValue{
-            "Year": &types.AttributeValueMemberN{Value: "2022"},
+            "Year": &types.AttributeValueMemberN{Value: year},
 			"CommitDate": &types.AttributeValueMemberN{Value: commitDate },
         },
         UpdateExpression: aws.String("set isRelease = :release"),
@@ -305,7 +305,7 @@ func (transmitter * TransmitterAPI) UpdateReleaseTag(year int, hash string) erro
 	return err
 }
 
-func (transmitter* TransmitterAPI) Query(year int, hash string) ([]map[string]interface{}, error) {
+func (transmitter* TransmitterAPI) Query(hash string) ([]map[string]interface{}, error) {
 	var err error
 	// var response *dynamodb.QueryOutput
 	var packets []map[string]interface{}
