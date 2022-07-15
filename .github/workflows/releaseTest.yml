@@ -27,7 +27,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  Update Performance Metrics:
+  UpdatePerformanceMetrics:
     name: "UpdatePerformanceMetrics"
     runs-on: ubuntu-latest
     steps:
