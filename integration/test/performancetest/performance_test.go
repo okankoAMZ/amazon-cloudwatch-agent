@@ -8,6 +8,7 @@ import(
 	"time"
 	"log"
 	"context"
+	"fmt"
 	"os"
 	"github.com/aws/amazon-cloudwatch-agent/integration/test"
 )
@@ -55,4 +56,16 @@ func TestPerformance(t *testing.T) {
 	if err !=nil{
 		t.Fatalf("Error: couldnt upload metric data to table")
 	}
+}
+
+func TestUpdateCommit(t*testing.T){
+	fmt.Println("Updating Release Commit")
+	dynamoDB := InitializeTransmitterAPI("CWAPerformanceMetrics") //add cwa version here
+	testHash := os.Getenv(SHA_ENV)
+	if dynamoDB == nil{
+		t.Fatalf("Error: generating dynamo table")
+	return
+	}
+	//@TODO figure out how to get date
+	dynamoDB.UpdateReleaseTag(2022,testHash)
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	// "github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 )
 
 const (
@@ -100,6 +101,10 @@ func (transmitter *TransmitterAPI) CreateTable() error {
 					AttributeName: aws.String("CommitDate"),
 					AttributeType: types.ScalarAttributeTypeN,
 				},
+				{
+					AttributeName: aws.String("Hash"),
+					AttributeType: types.ScalarAttributeTypeS,
+				},
 			},
 			KeySchema: []types.KeySchemaElement{
 				{
@@ -111,7 +116,28 @@ func (transmitter *TransmitterAPI) CreateTable() error {
 					KeyType:	   types.KeyTypeRange,
 				},
 			},
-
+			GlobalSecondaryIndexes: []types.GlobalSecondaryIndex{
+				{
+					IndexName: aws.String("Hash-index"),
+					KeySchema: []types.KeySchemaElement{
+						{
+							AttributeName: aws.String("Hash"),
+							KeyType:       types.KeyTypeHash,
+						},
+						{
+							AttributeName: aws.String("CommitDate"),
+							KeyType:	   types.KeyTypeRange,
+						},
+					},
+					Projection: &types.Projection{
+						ProjectionType : "ALL",
+					},
+					ProvisionedThroughput: &types.ProvisionedThroughput{
+						ReadCapacityUnits:  aws.Int64(10),
+						WriteCapacityUnits: aws.Int64(10),
+					},
+				},
+			},
 			ProvisionedThroughput: &types.ProvisionedThroughput{
 				ReadCapacityUnits:  aws.Int64(10),
 				WriteCapacityUnits: aws.Int64(10),
@@ -207,7 +233,7 @@ func (transmitter *TransmitterAPI) Parser(data []byte) (map[string]interface{}, 
 	packet[PARTITION_KEY] = time.Now().Year()
 	packet[HASH] =  os.Getenv(SHA_ENV) //fmt.Sprintf("%d", time.Now().UnixNano())
 	packet[COMMIT_DATE],_ = strconv.Atoi(os.Getenv(SHA_DATE_ENV))
-	
+	packet["isRelease"] = false
 	for _, rawMetricData := range dataHolder {
 		numDataPoints := float64(len(rawMetricData.Timestamps))
 		var avg float64
@@ -245,4 +271,55 @@ func (transmitter *TransmitterAPI) Parser(data []byte) (map[string]interface{}, 
 		packet[rawMetricData.Label] = metric
 	}
 	return packet, nil
+}
+
+/*
+
+*/
+func (transmitter * TransmitterAPI) UpdateReleaseTag(year int, hash string) error{
+	var err error
+	item,err := transmitter.Query(year,hash)
+	commitDate := fmt.Sprintf("%d",int(item[0]["CommitDate"].(float64)))
+	fmt.Println(commitDate)
+	_, err = transmitter.dynamoDbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
+        TableName: aws.String(transmitter.DataBaseName),
+        Key: map[string]types.AttributeValue{
+            "Year": &types.AttributeValueMemberN{Value: "2022"},
+			"CommitDate": &types.AttributeValueMemberN{Value: commitDate },
+        },
+        UpdateExpression: aws.String("set isRelease = :release"),
+        ExpressionAttributeValues: map[string]types.AttributeValue{
+            ":release": &types.AttributeValueMemberBOOL{Value: true},
+        },
+    })
+
+    if err != nil {
+        panic(err)
+    }
+	
+	return err
+}
+
+func (transmitter* TransmitterAPI) Query(year int, hash string) ([]map[string]interface{}, error) {
+	var err error
+	// var response *dynamodb.QueryOutput
+	var packets []map[string]interface{}
+    out, err := transmitter.dynamoDbClient.Query(context.TODO(), &dynamodb.QueryInput{
+        TableName:              aws.String(transmitter.DataBaseName),
+		IndexName:				aws.String("Hash-index"),
+        KeyConditionExpression: aws.String("#hash = :hash"),
+        ExpressionAttributeValues: map[string]types.AttributeValue{
+            ":hash": &types.AttributeValueMemberS{Value: hash},
+        },
+        ExpressionAttributeNames: map[string]string{
+            "#hash": "Hash",
+        },
+        ScanIndexForward: aws.Bool(true), // true or false to sort by "date" Sort/Range key ascending or descending
+    })
+	if err != nil {
+        panic(err)
+    }
+	// fmt.Println(out.Items)
+	attributevalue.UnmarshalListOfMaps(out.Items,&packets)
+	return packets, err
 }
