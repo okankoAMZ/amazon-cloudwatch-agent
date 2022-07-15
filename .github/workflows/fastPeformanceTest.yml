@@ -236,7 +236,7 @@ jobs:
         if: steps.ec2-linux-integration-test.outputs.cache-hit != 'true'
         uses: nick-invision/retry@v2
         with:
-          max_attempts: 3
+          max_attempts: 1
           timeout_minutes: 30
           retry_wait_seconds: 5
           command: |
@@ -254,6 +254,8 @@ jobs:
               -var="s3_bucket=${S3_INTEGRATION_BUCKET}" \
               -var="vpc_security_group_ids=${VPC_SECURITY_GROUPS_IDS}" \
               -var="key_name=${KEY_NAME}" \
+              -var="sha=${{ steps.sha.outputs.sha_short }}" \
+              -var="sha_date=${{ steps.sha_date.outputs.sha_date }}" \
               -var="test_name=cw-integ-test-${{ matrix.arrays.os }}" \
               -var="iam_instance_profile=${IAM_ROLE}" \
               -var="test_dir=${{ matrix.arrays.test_dir }}" ; then terraform destroy -auto-approve
@@ -266,7 +268,7 @@ jobs:
         if: ${{ cancelled() && steps.ec2-linux-integration-test.outputs.cache-hit != 'true' }}
         uses: nick-invision/retry@v2
         with:
-          max_attempts: 3
+          max_attempts: 1
           timeout_minutes: 8
           retry_wait_seconds: 5
           command: cd integration/terraform/ec2/linux && terraform destroy --auto-approve
