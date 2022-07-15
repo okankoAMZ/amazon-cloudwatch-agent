@@ -30,17 +30,18 @@ jobs:
   UpdatePerformanceMetrics:
     name: "UpdatePerformanceMetrics"
     runs-on: ubuntu-latest
-    uses: nick-invision/retry@v2
     steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ~1.18.3
       - name: "Set the Hash var"
         run: "export SHA=$GITHUB_SHA"
       - name: "Set release var"
         run: "export IS_RELEASE=true"
       - name: Run Golang Update Function
-        with:
-          max_attempts: 1
-          timeout_minutes: 30
-          retry_wait_seconds: 5
-          command: |
+        run: |
             cd integration/test/performancetest
             go test -run TestUpdateCommit -p 1 -timeout 30m -v --tags=integration
