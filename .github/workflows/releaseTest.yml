@@ -29,8 +29,11 @@ concurrency:
 jobs:
   Update Performance Metrics:
     name: "UpdatePerformanceMetrics"
+    runs-on: ubuntu-latest
     steps:
-      - name: "Set env var"
+      - name: "Set the Hash var"
         run: "export SHA=$GITHUB_SHA"
+      - name: "Set release var"
+        run: "export IS_RELEASE=true"
       - name: Run Golang Update Function
         run: "go test ./integration/test/performancetest -run TestUpdateCommit -p 1 -timeout 30m -v --tags=integration"

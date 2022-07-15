@@ -17,6 +17,7 @@ const (
 	configPath = "resources/config.json"
 	configOutputPath = "/opt/aws/amazon-cloudwatch-agent/bin/config.json"
 	agentRuntimeMinutes = 5 //20 def
+	
 
 )
 
@@ -57,8 +58,10 @@ func TestPerformance(t *testing.T) {
 		t.Fatalf("Error: couldnt upload metric data to table")
 	}
 }
-
 func TestUpdateCommit(t*testing.T){
+	if(os.Getenv("IS_RELEASE") ==""){
+		t.Skip("")
+	}
 	fmt.Println("Updating Release Commit")
 	dynamoDB := InitializeTransmitterAPI("CWAPerformanceMetrics") //add cwa version here
 	testHash := os.Getenv(SHA_ENV)
