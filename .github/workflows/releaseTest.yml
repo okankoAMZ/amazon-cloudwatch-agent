@@ -44,4 +44,4 @@ jobs:
       - name: Run Golang Update Function
         run: |
             cd integration/test/performancetest
-            go test -run TestUpdateCommit -p 1 -timeout 30m -v --tags=integration
+            go test -run TestUpdateCommit -p 1 -v --tags=integration IS_RELEASE=true
