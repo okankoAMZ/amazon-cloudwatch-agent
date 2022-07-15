@@ -43,4 +43,4 @@ jobs:
         run: |
             cd integration/test/performancetest
             export IS_RELEASE=true
-            go test -run TestUpdateCommit -p 1 -v --tags=integration IS_RELEASE=true
+            go test -run TestUpdateCommit -p 1 -v --tags=integration
