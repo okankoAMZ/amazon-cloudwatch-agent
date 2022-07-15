@@ -254,7 +254,7 @@ jobs:
               -var="s3_bucket=${S3_INTEGRATION_BUCKET}" \
               -var="vpc_security_group_ids=${VPC_SECURITY_GROUPS_IDS}" \
               -var="key_name=${KEY_NAME}" \
-              -var="sha=${{ steps.sha.outputs.sha_short }}" \
+              -var="sha=${GITHUB_SHA}" \
               -var="sha_date=${{ steps.sha_date.outputs.sha_date }}" \
               -var="test_name=cw-integ-test-${{ matrix.arrays.os }}" \
               -var="iam_instance_profile=${IAM_ROLE}" \
