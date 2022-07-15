@@ -36,6 +36,10 @@ jobs:
       - name: "Set release var"
         run: "export IS_RELEASE=true"
       - name: Run Golang Update Function
-        command: |
-        cd integration/test/performancetest
-        "go test -run TestUpdateCommit -p 1 -timeout 30m -v --tags=integration"
+        with:
+          max_attempts: 1
+          timeout_minutes: 30
+          retry_wait_seconds: 5
+          command: |
+            cd integration/test/performancetest
+            go test -run TestUpdateCommit -p 1 -timeout 30m -v --tags=integration
