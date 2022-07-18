@@ -218,11 +218,26 @@ Param: data []byte is the data collected by data collector
 func (transmitter *TransmitterAPI) SendItem(data []byte) (string, error) {
 	// return nil
 	packet, err := transmitter.Parser(data)
+	var sentItem string
 	if err != nil {
 		return "", err
 	}
-	// fmt.Printf("%+v",packet)
-	sentItem, err := transmitter.AddItem(packet)
+	// check if hash exists
+	item,err := transmitter.Query(packet[HASH].(string))
+	if err!=nil {
+		return "",err
+	}
+	if len(item)==0{ // if doesnt  exit addItem
+		sentItem, err = transmitter.AddItem(packet)
+	}
+	// item already exist so update
+	//temp solution VVVVVV
+	testSettings := fmt.Sprintf("%s-%s",os.Getenv("PERFORMANCE_NUMBER_OF_LOGS"),"10")
+	testSettingValue, _ := attributevalue.MarshalMap(packet[testSettings])
+	newAttributes := map[string]types.AttributeValue{
+		testSettings : &types.AttributeValueMemberM{Value : testSettingValue},
+	}
+	transmitter.UpdateItem(packet[HASH].(string),newAttributes)
 	return sentItem, err
 }
 func (transmitter *TransmitterAPI) Parser(data []byte) (map[string]interface{}, error) {
@@ -236,8 +251,8 @@ func (transmitter *TransmitterAPI) Parser(data []byte) (map[string]interface{}, 
 	packet[HASH] =  os.Getenv(SHA_ENV) //fmt.Sprintf("%d", time.Now().UnixNano())
 	packet[COMMIT_DATE],_ = strconv.Atoi(os.Getenv(SHA_DATE_ENV))
 	packet["isRelease"] = false
-	packet[NUMBER_OF_LOGS_MONITORED] = os.Getenv("PERFORMANCE_NUMBER_OF_LOGS")
-	packet[TPS] = 10
+	testSettings := fmt.Sprintf("%s-%s",os.Getenv("PERFORMANCE_NUMBER_OF_LOGS"),"10")
+	var testMetricResults map[string]Metric
 	for _, rawMetricData := range dataHolder {
 		numDataPoints := float64(len(rawMetricData.Timestamps))
 		var avg float64
@@ -272,8 +287,9 @@ func (transmitter *TransmitterAPI) Parser(data []byte) (map[string]interface{}, 
 			Std: 	rand.Float64(),
 			Period:  int(METRIC_PERIOD / (numDataPoints)),
 			Data:    rawMetricData.Values}
-		packet[rawMetricData.Label] = metric
+		testMetricResults[rawMetricData.Label] = metric
 	}
+	packet[testSettings] = testMetricResults
 	return packet, nil
 }
 
@@ -350,3 +366,19 @@ func (transmitter* TransmitterAPI) Query(hash string) ([]map[string]interface{},
 	attributevalue.UnmarshalListOfMaps(out.Items,&packets)
 	return packets, err
 }
+
+
+// func (transmitter*TransmitterAPI) HashExist(hash string) (bool, error){
+// 	if hash==""{
+// 		return false,errors.New("Invalid hash")
+// 	}
+// 	item,err := transmitter.Query(hash)
+// 	if err != nil{
+// 		return false,err
+// 	}
+// 	if len(item) == 0{
+// 		return false,nil
+// 	}
+// 	return true,err
+
+// }
