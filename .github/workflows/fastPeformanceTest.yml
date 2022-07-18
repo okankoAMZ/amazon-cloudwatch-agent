@@ -258,6 +258,7 @@ jobs:
               -var="sha_date=${{ steps.sha_date.outputs.sha_date }}" \
               -var="test_name=cw-integ-test-${{ matrix.arrays.os }}" \
               -var="iam_instance_profile=${IAM_ROLE}" \
+              -var="performance_number_of_logs=${{ matrix.arrays.performance_number_of_logs}}"\
               -var="test_dir=${{ matrix.arrays.test_dir }}" ; then terraform destroy -auto-approve
             else
               terraform destroy -auto-approve && exit 1
