@@ -243,7 +243,8 @@ func (transmitter *TransmitterAPI) SendItem(data []byte) (string, error) {
 	if isPresent{ // no diff
 		return "",errors.New("Nothing to update")
 	}
-	testSettingValue, err := attributevalue.MarshalMap(packet[testSettings])
+	testSettingValue, err := attributevalue.MarshalMap(packet["Results"].(map[string]map[string]Metric)[testSettings])
+	fmt.Println("test value",testSettingValue)
 	if err !=nil{
 		fmt.Println(err)
 	}
@@ -256,7 +257,6 @@ func (transmitter *TransmitterAPI) SendItem(data []byte) (string, error) {
 	}
 	
 	tempResults[testSettings] = testSettingValue
-	fmt.Println("temp",len(tempResults))
 	results, _ := attributevalue.MarshalMap(tempResults)
 	newAttributes := map[string]types.AttributeValue{
 		"Results" : &types.AttributeValueMemberM{

@@ -55,7 +55,7 @@ func TestPerformance(t *testing.T) {
 	}
 	_, err = dynamoDB.SendItem(data)
 	if err !=nil{
-		t.Fatalf("Error: couldnt upload metric data to table")
+		t.Fatalf("Error: couldnt upload metric data to table %s",err)
 	}
 }
 func TestUpdateCommit(t*testing.T){
