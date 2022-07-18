@@ -10,7 +10,7 @@ import (
 	"time"
 	"strconv"
 	"log"
-
+	"strings"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
@@ -26,6 +26,8 @@ const (
 	COMMIT_DATE= "CommitDate"
 	SHA_ENV  = "SHA"
 	SHA_DATE_ENV = "SHA_DATE"
+	NUMBER_OF_LOGS_MONITORED = "NumberOfLogsMonitored"
+	TPS = "TPS"
 )
 type TransmitterAPI struct {
 	dynamoDbClient *dynamodb.Client
@@ -234,6 +236,8 @@ func (transmitter *TransmitterAPI) Parser(data []byte) (map[string]interface{}, 
 	packet[HASH] =  os.Getenv(SHA_ENV) //fmt.Sprintf("%d", time.Now().UnixNano())
 	packet[COMMIT_DATE],_ = strconv.Atoi(os.Getenv(SHA_DATE_ENV))
 	packet["isRelease"] = false
+	packet[NUMBER_OF_LOGS_MONITORED] = os.Getenv("PERFORMANCE_NUMBER_OF_LOGS")
+	packet[TPS] = 10
 	for _, rawMetricData := range dataHolder {
 		numDataPoints := float64(len(rawMetricData.Timestamps))
 		var avg float64
@@ -273,41 +277,59 @@ func (transmitter *TransmitterAPI) Parser(data []byte) (map[string]interface{}, 
 	return packet, nil
 }
 
-/*
-
-*/
-func (transmitter * TransmitterAPI) UpdateReleaseTag(hash string) error{
+func (transmitter * TransmitterAPI) UpdateItem(hash string,targetAttributes map[string]types.AttributeValue) error{
 	var err error
 	fmt.Println("Updating:",hash)
-	item,err := transmitter.Query(hash)
+	item,err := transmitter.Query(hash) // O(1) bcs of global sec. idx.
 	if len(item) ==0{
-		return errors.New("Hash not in dynamo")
+		return errors.New("ERROR: Hash is not found in dynamo")
 	}
 	commitDate := fmt.Sprintf("%d",int(item[0]["CommitDate"].(float64)))
 	year := fmt.Sprintf("%d",int(item[0]["Year"].(float64)))
-	fmt.Println(commitDate)
+	expressionAttributeValues := make(map[string]types.AttributeValue)
+	expression := ""
+	n_expression := len(targetAttributes)
+	i :=0
+	for attribute, value := range targetAttributes{
+		expressionName := ":" +strings.ToLower(attribute)
+		expression = fmt.Sprintf("set %s = %s",attribute,expressionName)
+		expressionAttributeValues[expressionName] = value
+		if(n_expression -1 >i){
+			expression += "and"
+		}
+		i++
+	}
 	_, err = transmitter.dynamoDbClient.UpdateItem(context.TODO(), &dynamodb.UpdateItemInput{
         TableName: aws.String(transmitter.DataBaseName),
         Key: map[string]types.AttributeValue{
             "Year": &types.AttributeValueMemberN{Value: year},
 			"CommitDate": &types.AttributeValueMemberN{Value: commitDate },
         },
-        UpdateExpression: aws.String("set isRelease = :release"),
-        ExpressionAttributeValues: map[string]types.AttributeValue{
-            ":release": &types.AttributeValueMemberBOOL{Value: true},
-        },
+        UpdateExpression: aws.String(expression),
+        ExpressionAttributeValues: expressionAttributeValues,
     })
 
     if err != nil {
         panic(err)
     }
-	
+	return err
+}
+/*
+UpdateReleaseTag()
+Desc: This function takes in a commit hash and updates the release value to true
+Param: commit hash in terms of string 
+*/
+func (transmitter * TransmitterAPI) UpdateReleaseTag(hash string) error{
+	attributes := map[string]types.AttributeValue{
+		"isRelease":&types.AttributeValueMemberBOOL{Value: true},
+	}
+	err := transmitter.UpdateItem(hash,attributes)
 	return err
 }
 
+
 func (transmitter* TransmitterAPI) Query(hash string) ([]map[string]interface{}, error) {
 	var err error
-	// var response *dynamodb.QueryOutput
 	var packets []map[string]interface{}
     out, err := transmitter.dynamoDbClient.Query(context.TODO(), &dynamodb.QueryInput{
         TableName:              aws.String(transmitter.DataBaseName),

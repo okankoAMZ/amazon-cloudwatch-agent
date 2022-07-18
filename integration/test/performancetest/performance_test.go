@@ -69,6 +69,6 @@ func TestUpdateCommit(t*testing.T){
 		t.Fatalf("Error: generating dynamo table")
 	return
 	}
-	//@TODO figure out how to get date
+
 	dynamoDB.UpdateReleaseTag(testHash)
 }
