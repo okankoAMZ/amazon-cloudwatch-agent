@@ -238,6 +238,7 @@ func (transmitter *TransmitterAPI) SendItem(data []byte) (string, error) {
 	// item already exist so update
 	//temp solution VVVVVV
 	testSettings := fmt.Sprintf("%s-%s",os.Getenv("PERFORMANCE_NUMBER_OF_LOGS"),"10")
+	fmt.Println("The test is",testSettings)
 	item := itemList[0]["Results"].(map[string]interface{})
 	_,isPresent := item[testSettings] // check if we already had this test
 	if isPresent{ // no diff
