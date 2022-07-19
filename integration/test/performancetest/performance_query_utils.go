@@ -18,8 +18,8 @@ const (
 	Namespace = "CWAgent"
 	DimensionName = "InstanceId"
 	Stat = "Average"
-	Period = 30
-	// configPath = "./resources/config.json"
+	Period = 10
+	configPath = "./resources/config.json"
 )
 
 /*

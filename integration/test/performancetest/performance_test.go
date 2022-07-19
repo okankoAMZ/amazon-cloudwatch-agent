@@ -16,9 +16,8 @@ import(
 const (
 	configPath = "resources/config.json"
 	configOutputPath = "/opt/aws/amazon-cloudwatch-agent/bin/config.json"
-	agentRuntimeMinutes = 5 //20 def
-	
-
+	agentRuntimeMinutes = 5 //20min desired but 5mins for testing purposes 
+	DynamoDBDataBase = "CWAPerformanceMetrics"
 )
 
 func TestPerformance(t *testing.T) {
@@ -38,6 +37,7 @@ func TestPerformance(t *testing.T) {
 
 	//collect data
 	data, err := GetPerformanceMetrics(instanceId, agentRuntimeMinutes, agentContext)
+	//@TODO check if metrics are zero remove them and make sure there are non-zero metrics existing
 	if err != nil {
 		log.Println("Error: ", err)
 		t.Fatalf("Error: %v", err)
@@ -49,7 +49,7 @@ func TestPerformance(t *testing.T) {
 		t.Fatalf("No data")
 	}
 	//data base 
-	dynamoDB := InitializeTransmitterAPI("CWAPerformanceMetrics") //add cwa version here
+	dynamoDB := InitializeTransmitterAPI(DynamoDBDataBase) //add cwa version here
 	if dynamoDB == nil{
 		t.Fatalf("Error: generating dynamo table")
 	}
