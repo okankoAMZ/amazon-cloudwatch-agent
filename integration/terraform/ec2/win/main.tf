@@ -15,6 +15,7 @@ resource "aws_instance" "integration-test" {
       "git reset --hard ${var.github_sha}",
       "aws s3 cp s3://${var.s3_bucket}/integration-test/packaging/${var.github_sha}/amazon-cloudwatch-agent.msi .",
       "msiexec /i amazon-cloudwatch-agent.msi",
+      "go test integration/test/windows_installation_test/windows_installaton_test.go -p 1 -v --tags=integration",
     ]
     connection {
       type     = "ssh"

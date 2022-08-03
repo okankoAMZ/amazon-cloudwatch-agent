@@ -25,11 +25,8 @@ var osToTestDirMap = map[string][]string{
 		"./integration/test/cloudwatchlogs",
 		"./integration/test/metrics_number_dimension",
 	},
-	"ec2_performance":{
-		"./integration/test/performancetest",
-	},
 	// @TODO add real tests
-	"ec2_windows": {""},
+	"ec2_windows": {"./integration/test/windows_installation_test"},
 	"ec2_mac":     {},
 	"ecs_fargate": {
 		"./integration/test/ecs/ecs_metadata",
@@ -45,14 +42,14 @@ func main() {
 
 func genMatrix(targetOS string, testDirList []string) []map[string]string {
 	openTestMatrix, err := os.Open(fmt.Sprintf("integration/generator/resources/%v_test_matrix.json", targetOS))
-	
+
 	if err != nil {
 		log.Panicf("can't read file %v_test_matrix.json err %v", targetOS, err)
 	}
-	
+
 	byteValueTestMatrix, _ := ioutil.ReadAll(openTestMatrix)
 	_ = openTestMatrix.Close()
-	
+
 	var testMatrix []map[string]string
 	err = json.Unmarshal(byteValueTestMatrix, &testMatrix)
 	if err != nil {

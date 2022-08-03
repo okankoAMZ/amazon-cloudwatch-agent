@@ -1,0 +1,308 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT
+
+name: Run Integration Tests
+env:
+  PRIVATE_KEY: ${{ secrets.AWS_PRIVATE_KEY  }}
+  TERRAFORM_AWS_ACCESS_KEY_ID: ${{ secrets.TERRAFORM_AWS_ACCESS_KEY_ID }}
+  TERRAFORM_AWS_SECRET_ACCESS_KEY: ${{ secrets.TERRAFORM_AWS_SECRET_ACCESS_KEY }}
+  S3_INTEGRATION_BUCKET: ${{ secrets.S3_INTEGRATION_BUCKET }}
+  KEY_NAME: ${{ secrets.KEY_NAME }}
+  VPC_SECURITY_GROUPS_IDS: ${{ secrets.VPC_SECURITY_GROUPS_IDS }}
+  IAM_ROLE: ${{ secrets.IAM_ROLE }}
+  GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+  PASSPHRASE: ${{ secrets.PASSPHRASE }}
+  GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
+  GPG_TTY: $(tty)
+  ECR_INTEGRATION_TEST_REPO: "cwagent-integration-test"
+
+on:
+  push:
+    branches:
+      - windows_integration_test
+
+
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  MakeBinary:
+    name: 'MakeBinary'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          submodules: 'true'
+
+      # Set up building environment, patch the dev repo code on dispatch events.
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ~1.18.3
+
+      - name: Install rpm
+        run: sudo apt install rpm
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.TERRAFORM_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.TERRAFORM_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      - name: Cache go
+        id: cached_go
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+
+      - name: Cache binaries
+        id: cached_binaries
+        uses: actions/cache@v2
+        with:
+          key: "cached_binaries_${{ github.sha }}"
+          path: go.mod
+
+      - name: Build Binaries
+        if: steps.cached_binaries.outputs.cache-hit != 'true'
+        run: make build package-rpm package-deb package-win package-darwin
+
+      - uses: olafurpg/setup-gpg@v3
+
+      - name: Sign packages
+        if: steps.cached_binaries.outputs.cache-hit != 'true'
+        run: |
+          echo "${GPG_PRIVATE_KEY}" | gpg --batch --import -
+          for f in $(find build/bin/); do if [ ! -d $f ]; then echo "Signing file $f" && echo "${PASSPHRASE}" | gpg --detach-sign  --passphrase-fd 0 --batch --default-key "${GPG_KEY_NAME}" $f ; fi ; done
+
+
+      - name: Upload to s3
+        if: steps.cached_binaries.outputs.cache-hit != 'true'
+        run: aws s3 cp build/bin s3://${S3_INTEGRATION_BUCKET}/integration-test/binary/${{ github.sha }} --recursive
+  GenerateTestMatrix:
+    name: 'GenerateTestMatrix'
+    runs-on: ubuntu-latest
+    outputs:
+      ec2_linux_matrix: ${{ steps.set-matrix.outputs.ec2_linux_matrix }}
+      ec2_performance_matrix: ${{steps.set-matrix.outputs.ec2_performance_matrix}}
+      ec2_windows_matrix: ${{ steps.set-matrix.outputs.ec2_windows_matrix }}
+      ecs_fargate_matrix: ${{ steps.set-matrix.outputs.ecs_fargate_matrix }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ~1.18.3
+
+      - name: Generate matrix
+        id: set-matrix
+        run: |
+          go run --tags=generator integration/generator/test_case_generator.go
+          echo "::set-output name=ec2_linux_matrix::$(echo $(cat integration/generator/resources/ec2_linux_complete_test_matrix.json))"
+          echo "::set-output name=ec2_performance_matrix::$(echo $(cat integration/generator/resources/ec2_performance_complete_test_matrix.json))"
+          echo "::set-output name=ec2_windows_matrix::$(echo $(cat integration/generator/resources/ec2_windows_complete_test_matrix.json))"
+          echo "::set-output name=ecs_fargate_matrix::$(echo $(cat integration/generator/resources/ecs_fargate_complete_test_matrix.json))"
+
+      - name: Echo test plan matrix
+        run: |
+          echo ${{ steps.set-matrix.outputs.ec2_linux_matrix }}
+          echo ${{ steps.set-matrix.outputs.ec2_performance_matrix}}
+          echo ${{ steps.set-matrix.outputs.ec2_windows_matrix }}
+          echo ${{ steps.set-matrix.outputs.ecs_fargate_matrix }}
+
+  MakeMSIZip:
+    name: 'MakeMSIZip'
+    runs-on: ubuntu-latest
+    needs: [MakeBinary]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ~1.18.3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.TERRAFORM_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.TERRAFORM_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      - name: Cache win zip
+        id: cached_win_zip
+        uses: actions/cache@v2
+        with:
+          key: "cached_win_zip_${{ github.sha }}"
+          path: go.mod
+
+      - name: Copy binary
+        if: steps.cached_win_zip.outputs.cache-hit != 'true'
+        run: |
+          aws s3 cp s3://${S3_INTEGRATION_BUCKET}/integration-test/binary/${{ github.sha }} . --recursive
+
+      - uses: montudor/action-zip@v1
+        if: steps.cached_win_zip.outputs.cache-hit != 'true'
+        with:
+          args: unzip -qq windows/amd64/amazon-cloudwatch-agent.zip -d windows-agent
+
+      - name: Create msi dep folder and copy deps
+        if: steps.cached_win_zip.outputs.cache-hit != 'true'
+        run: |
+          export version=$(cat CWAGENT_VERSION)
+          echo cw agent version $version
+          mkdir msi_dep
+          cp -r integration/msi/tools/. msi_dep/
+          cp -r windows-agent/amazon-cloudwatch-agent/. msi_dep/
+          go run integration/msi/tools/msiversion/msiversionconverter.go $version msi_dep/amazon-cloudwatch-agent.wxs '<version>' --tags=integration
+          go run integration/msi/tools/msiversion/msiversionconverter.go $version msi_dep/manifest.json __VERSION__ --tags=integration
+
+      - uses: papeloto/action-zip@v1
+        if: steps.cached_win_zip.outputs.cache-hit != 'true'
+        with:
+          files: msi_dep/
+          dest: buildMSI.zip
+
+      - name: Upload zip
+        if: steps.cached_win_zip.outputs.cache-hit != 'true'
+        run: aws s3 cp buildMSI.zip s3://${S3_INTEGRATION_BUCKET}/integration-test/packaging/${{ github.sha }}/buildMSI.zip
+
+  BuildMSI:
+    name: 'BuildMSI'
+    runs-on: windows-latest
+    needs: [MakeMSIZip]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.TERRAFORM_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.TERRAFORM_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      - name: Cache msi
+        id: cached_msi
+        uses: actions/cache@v2
+        with:
+          key: "cached_msi_${{ github.sha }}"
+          path: go.mod
+
+      # Using the env variable returns "" for bucket name thus use the secret
+      - name: Copy msi
+        if: steps.cached_msi.outputs.cache-hit != 'true'
+        run: aws s3 cp s3://${{ secrets.S3_INTEGRATION_BUCKET }}/integration-test/packaging/${{ github.sha }}/buildMSI.zip .
+
+      - name: Create msi
+        if: steps.cached_msi.outputs.cache-hit != 'true'
+        run : |
+          curl -OLS https://github.com/wixtoolset/wix3/releases/download/wix3111rtm/wix311.exe
+          .\wix311.exe /install /quiet /norestart
+          $wixToolsetBinPath = ";C:\Program Files (x86)\WiX Toolset v3.11\bin;"
+          $env:PATH = $env:PATH + $wixToolsetBinPath
+          Expand-Archive buildMSI.zip -Force
+          cd buildMSI
+          .\create_msi.ps1 ${{ github.sha }} ${{ secrets.S3_INTEGRATION_BUCKET }}
+
+  EC2WinIntegrationTest:
+    needs: [BuildMSI, GenerateTestMatrix]
+    name: 'EC2WinIntegrationTest'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arrays: ${{ fromJson(needs.GenerateTestMatrix.outputs.ec2_windows_matrix) }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.TERRAFORM_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.TERRAFORM_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      - name: Cache if success
+        id: ec2-win-integration-test
+        uses: actions/cache@v2
+        with:
+          path: go.mod
+          key: ec2-win-integration-test-${{ github.sha }}-${{ matrix.arrays.os }}
+
+      - name: Echo OS
+        run: echo run on ec2 instance os ${{ matrix.arrays.os }}
+
+      - name: Verify Terraform version
+        run: terraform --version
+
+        # nick-invision/retry@v2 starts at base dir
+      - name: Terraform apply
+        if: steps.ec2-win-integration-test.outputs.cache-hit != 'true'
+        uses: nick-invision/retry@v2
+        with:
+          max_attempts: 3
+          timeout_minutes: 15
+          retry_wait_seconds: 5
+          command: |
+            cd integration/terraform/ec2/win
+            terraform init
+            if terraform apply --auto-approve \
+            -var="ssh_key=${PRIVATE_KEY}" -var="key_name=${KEY_NAME}" \
+            -var="github_repo=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" \
+            -var="github_sha=${GITHUB_SHA}" -var="ami=${{ matrix.arrays.ami }}" \
+            -var="test_name=cw-integ-test-${{ matrix.arrays.os }}" \
+            -var="iam_instance_profile=${IAM_ROLE}" \
+            -var="vpc_security_group_ids=${VPC_SECURITY_GROUPS_IDS}" \
+            -var="s3_bucket=${S3_INTEGRATION_BUCKET}" ; then terraform destroy -auto-approve
+            else
+              terraform destroy -auto-approve && exit 1
+            fi
+
+      #This is here just in case workflow cancel
+      - name: Terraform destroy
+        if: ${{ cancelled() && steps.ec2-win-integration-test.outputs.cache-hit != 'true' }}
+        uses: nick-invision/retry@v2
+        with:
+          max_attempts: 3
+          timeout_minutes: 8
+          retry_wait_seconds: 5
+          command: cd cd integration/terraform/ec2/win && terraform destroy --auto-approve -var="ami=${{ matrix.arrays.ami }}"
+
+
+  StopLocalStack:
+    name: 'StopLocalStack'
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs: [ StartLocalStack, EC2LinuxIntegrationTest ]
+    defaults:
+      run:
+        working-directory: integration/terraform/ec2/localstack
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.TERRAFORM_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.TERRAFORM_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      - name: Copy state
+        run: aws s3 cp s3://${S3_INTEGRATION_BUCKET}/integration-test/local-stack-terraform-state/${GITHUB_SHA}/terraform.tfstate .
+
+      - name: Verify Terraform version
+        run: terraform --version
+
+      - name: Terraform init
+        run: terraform init
+
+      - name: Terraform destroy
+        run: terraform destroy --auto-approve
