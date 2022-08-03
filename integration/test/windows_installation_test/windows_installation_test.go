@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+
 )
 const (
 	TIMEOUT  = 20 // 20*100= 2000 millisecond = 2second of trying
@@ -33,10 +34,16 @@ func TestShellCreation(t *testing.T) {
 	if err !=nil{
 		t.Fatalf("%s",err)
 	}
-	t.Log("Installation Started")
+	
+	i:=0
 	for !isMSIRunning() {
+		if( i> TIMEOUT){
+			break
+		}
+		i++;
 	} //wait till process starts
-	for i := 0; i < TIMEOUT; i++ {
+	t.Log("Installation Started")
+	for i = 0; i < TIMEOUT; i++ {
 		newPIDs := getCurrentPIDs()
 		if !reflect.DeepEqual(newPIDs, oldPIDs) { //check if there are any new PIDs
 			diffPIDs := getDifference(oldPIDs, newPIDs)
