@@ -1,7 +1,7 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT
 
-name: Run Integration Tests
+name: Windows Integration Tests
 env:
   PRIVATE_KEY: ${{ secrets.AWS_PRIVATE_KEY  }}
   TERRAFORM_AWS_ACCESS_KEY_ID: ${{ secrets.TERRAFORM_AWS_ACCESS_KEY_ID }}
@@ -252,7 +252,7 @@ jobs:
           .\create_msi.ps1 ${{ github.sha }} ${{ secrets.S3_INTEGRATION_BUCKET }}
 
   EC2WinIntegrationTest:
-    needs: [BuildMSI, GenerateTestMatrix]
+    needs: [BuildMSI, GenerateTestMatrix,StartLocalStack]
     name: 'EC2WinIntegrationTest'
     runs-on: ubuntu-latest
     strategy:
