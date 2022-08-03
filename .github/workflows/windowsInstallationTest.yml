@@ -300,7 +300,8 @@ jobs:
             -var="test_name=cw-integ-test-${{ matrix.arrays.os }}" \
             -var="iam_instance_profile=${IAM_ROLE}" \
             -var="vpc_security_group_ids=${VPC_SECURITY_GROUPS_IDS}" \
-            -var="s3_bucket=${S3_INTEGRATION_BUCKET}" ; then terraform destroy -auto-approve
+            -var="s3_bucket=${S3_INTEGRATION_BUCKET}" \
+            -var="test_dir=${{ matrix.arrays.test_dir }}" ; then terraform destroy -auto-approve
             else
               terraform destroy -auto-approve && exit 1
             fi
