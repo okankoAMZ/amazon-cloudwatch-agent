@@ -29,7 +29,10 @@ func TestShellCreation(t *testing.T) {
 	if run == nil {
 		t.Fatalf("ERROR: Couldn't run MSI")
 	}
-	run.Start()
+	err:=run.Start()
+	if err !=nil{
+		t.Fatalf("%s",err)
+	}
 	t.Log("Installation Started")
 	for !isMSIRunning() {
 	} //wait till process starts
