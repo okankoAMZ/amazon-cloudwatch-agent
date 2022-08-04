@@ -45,6 +45,7 @@ func TestShellCreation(t *testing.T) {
 	t.Log("Installation Started")
 	for i = 0; i < TIMEOUT; i++ {
 		newPIDs := getCurrentPIDs()
+		t.Log(newPIDs)
 		if !reflect.DeepEqual(newPIDs, oldPIDs) { //check if there are any new PIDs
 			diffPIDs := getDifference(oldPIDs, newPIDs)
 			for _, pid := range diffPIDs {
