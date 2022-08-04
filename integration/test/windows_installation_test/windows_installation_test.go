@@ -45,7 +45,7 @@ func TestShellCreation(t *testing.T) {
 	t.Log("Installation Started")
 	for i = 0; i < TIMEOUT; i++ {
 		newPIDs := getCurrentPIDs()
-		t.Log(newPIDs)
+		
 		if !reflect.DeepEqual(newPIDs, oldPIDs) { //check if there are any new PIDs
 			diffPIDs := getDifference(oldPIDs, newPIDs)
 			for _, pid := range diffPIDs {
@@ -90,6 +90,7 @@ Return: List of PIDs in string form
 func getCurrentPIDs() []string {
 	preInstallerShells := []string{}
 	processes := getCurrentProcesses()
+	fmt.Println("processes",processes)
 	for _, val := range processes {
 		if strings.Contains(val, "PID") {
 			pid := strings.Split(val, "          ")[1]
