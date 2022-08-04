@@ -58,7 +58,7 @@ func TestShellCreation(t *testing.T) {
 			oldPIDs = newPIDs
 		}
 		time.Sleep(PERIOD * time.Millisecond)
-		if isMSIRunning() {
+		if !isMSIRunning() {
 			t.Log("Installation Completed",i)
 			break
 		}
@@ -129,6 +129,7 @@ func isMSIRunning() bool {
 	rawTags, _ := cmd.Output()
 	cmds := strings.Split(string(rawTags), "\r\n")
 	// fmt.Println(cmds,len(cmds))
+	fmt.Println(cmds)
 	return !contains(cmds, errorString)
 }
 
