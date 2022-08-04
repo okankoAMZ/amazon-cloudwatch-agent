@@ -57,7 +57,7 @@ func TestShellCreation(t *testing.T) {
 			oldPIDs = newPIDs
 		}
 		time.Sleep(PERIOD * time.Millisecond)
-		if !isMSIRunning() {
+		if isMSIRunning() {
 			t.Log("Installation Completed",i)
 			break
 		}
