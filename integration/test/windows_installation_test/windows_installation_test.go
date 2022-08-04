@@ -48,6 +48,7 @@ func TestShellCreation(t *testing.T) {
 		if !reflect.DeepEqual(newPIDs, oldPIDs) { //check if there are any new PIDs
 			diffPIDs := getDifference(oldPIDs, newPIDs)
 			for _, pid := range diffPIDs {
+				t.Logf("PID in diffPIds %s",pid)
 				parent := getParent(pid)
 				if parent == MSIEXEC {
 					t.Fatalf("ERROR: MSI summoned powershell window")
@@ -57,7 +58,7 @@ func TestShellCreation(t *testing.T) {
 		}
 		time.Sleep(PERIOD * time.Millisecond)
 		if !isMSIRunning() {
-			t.Log("Installation Completed")
+			t.Log("Installation Completed",i)
 			break
 		}
 	}
