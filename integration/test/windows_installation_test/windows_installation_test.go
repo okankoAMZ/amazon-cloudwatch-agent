@@ -11,7 +11,7 @@ import (
 
 )
 const (
-	TIMEOUT  = 20 // 20*100= 2000 millisecond = 2second of trying
+	TIMEOUT  = 1200 // 20*100= 2000 millisecond = 2second of trying
 	MSI_NAME = "amazon-cloudwatch-agent.msi"
 	MSIEXEC  = "msiexec.exe"
 	PERIOD   = 100 // milliseconds. How often to check for shells
