@@ -40,7 +40,7 @@ var uniqueConversions = map[string]struct {
 	scale        float64
 }{
 	// time
-	"ns":  {types.StandardUnitMicroseconds, 1 / float64(time.Microsecond.Nanoseconds())},
+	"ns":  {types.StandardUnitNone, 1},
 	"min": {types.StandardUnitSeconds, time.Minute.Seconds()},
 	"h":   {types.StandardUnitSeconds, time.Hour.Seconds()},
 	"d":   {types.StandardUnitSeconds, 24 * time.Hour.Seconds()},
@@ -75,6 +75,7 @@ var scaledBaseUnits = map[types.StandardUnit]map[unit.MetricPrefix]types.Standar
 
 var knownNonConvertibleUnits = collections.NewSet(
 	// JMX/Tomcat units
+	"sessions",
 	"errors",
 	"threads",
 	"requests",

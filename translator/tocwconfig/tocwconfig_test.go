@@ -38,6 +38,7 @@ import (
 	"github.com/aws/amazon-cloudwatch-agent/translator/translate/agent"
 	"github.com/aws/amazon-cloudwatch-agent/translator/translate/otel/common"
 	"github.com/aws/amazon-cloudwatch-agent/translator/util"
+	"github.com/aws/amazon-cloudwatch-agent/translator/util/ecsutil"
 	"github.com/aws/amazon-cloudwatch-agent/translator/util/eksdetector"
 )
 
@@ -120,6 +121,20 @@ func TestAppSignalsFallbackAndEKSConfig(t *testing.T) {
 	expectedEnvVars := map[string]string{}
 	checkTranslation(t, "appsignals_fallback_and_eks_config", "linux", expectedEnvVars, "")
 	checkTranslation(t, "appsignals_fallback_and_eks_config", "windows", expectedEnvVars, "")
+}
+
+func TestAppSignalsAndECSConfig(t *testing.T) {
+	resetContext(t)
+	context.CurrentContext().SetRunInContainer(true)
+	t.Setenv(config.HOST_NAME, "host_name_from_env")
+	t.Setenv(config.HOST_IP, "127.0.0.1")
+	context.CurrentContext().SetMode(config.ModeEC2)
+	ecsutil.GetECSUtilSingleton().Region = "test-region"
+	ecsutil.GetECSUtilSingleton().TaskARN = "arn:aws:ecs:us-east-1:account_id:task/task_id"
+
+	expectedEnvVars := map[string]string{}
+	checkTranslation(t, "appsignals_and_ecs_config", "linux", expectedEnvVars, "")
+	checkTranslation(t, "appsignals_and_ecs_config", "windows", expectedEnvVars, "")
 }
 
 func TestAppSignalsFavorOverFallbackConfig(t *testing.T) {
@@ -564,7 +579,7 @@ func TestIgnoreInvalidAppendDimensions(t *testing.T) {
 
 func TestTomlToTomlComparison(t *testing.T) {
 	resetContext(t)
-	var jsonFilePath = "./totomlconfig/tomlConfigTemplate/agentToml.json"
+	var jsonFilePath = "./totomlconfig/testdata/agentToml.json"
 	var input interface{}
 	x := os.Getenv("HOST_NAME")
 	require.Equal(t, "", x)
@@ -572,7 +587,7 @@ func TestTomlToTomlComparison(t *testing.T) {
 	content, err := os.ReadFile(jsonFilePath)
 	require.NoError(t, err)
 	require.NoError(t, json.Unmarshal(content, &input))
-	verifyToTomlTranslation(t, input, "./totomlconfig/tomlConfigTemplate/agentToml.conf", map[string]string{})
+	verifyToTomlTranslation(t, input, "./totomlconfig/testdata/agentToml.conf", map[string]string{})
 }
 
 func checkTranslation(t *testing.T, fileName string, targetPlatform string, expectedEnvVars map[string]string, appendString string, tokenReplacements ...map[string]string) {
@@ -618,6 +633,7 @@ func resetContext(t *testing.T) {
 	util.DetectCredentialsPath = func() string {
 		return "fake-path"
 	}
+	ecsutil.GetECSUtilSingleton().Region = ""
 	context.ResetContext()
 
 	t.Setenv("ProgramData", "c:\\ProgramData")

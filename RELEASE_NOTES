@@ -1,4 +1,58 @@
 ========================================================================
+Amazon CloudWatch Agent 1.300047.0 (2024-10-03)
+========================================================================
+Enhancements:
+* Increase retry delay on PLE for certain exceptions
+* [ApplicationSignals] Add new log attribute for AWS Resource CloudFormation Primary Identifier in EMF logs
+* [ApplicationSignals] Add ECS as a supported platform with ECS specific attributes for EMF logs
+
+========================================================================
+Amazon CloudWatch Agent 1.300045.1 (2024-09-03)
+========================================================================
+Bug Fixes:
+* [ApplicationSignals] EKS resource detector is now no-op on non-EKS environments
+* Stop converting nanosecond metrics to microsecond
+
+Enhancements:
+* [ContainerInsights] Use IMDS to get instance ID and type for Neuron Monitor.
+
+========================================================================
+Amazon CloudWatch Agent 1.300045.0 (2024-08-26)
+========================================================================
+Bug Fixes:
+* [ApplicationSignals] Fix EKS detector nil panic (#1315)
+
+Enhancements:
+* [ContainerInsights] Add HyperPod status metrics for SageMaker (#1309)
+* [ContainerInsights] Add pod_cpu_usage_total & pod_memory_working_set (#1294)
+* Reduce the size of the start-amazon-cloudwatch-agent binary (#1302)
+* [ContainerInsights] Update the prefix for SageMaker HyperPod status metrics (#1313)
+
+========================================================================
+Amazon CloudWatch Agent 1.300044.0 (2024-08-14)
+========================================================================
+Bug Fixes:
+* [ContainerInsights] Update GPU usage metrics emitted 
+* [ContainerInsights] Deprecate runtime tag from neuron metrics to fix false average calculation
+
+Enhancements:
+* [ContainerInsights] Filter some neuron attributes to reduce the size of EMF logs
+
+========================================================================
+Amazon CloudWatch Agent 1.300043.0 (2024-08-08)
+========================================================================
+Bug Fixes:
+* [Metrics/Plugin] Drop original metrics support added for statsd, collectd and ethtool metrics
+* [Logs/Windows Event] Add windows event log service restart detection and resubscribe
+* [Metrics/JMX, Metrics/Net, Metrics/DiskIO] Change cumulative to delta conversion to drop initial value
+* [Metrics/JMX] Suppress sessions unit warning
+
+Enhancements:
+* [Metrics/JMX] Add cumulative to delta conversion for JMX metrics
+* [ApplicationSignals] Rename and group application signals attributes
+* Upgrade OTEL Contrib to v0.103.0
+
+========================================================================
 Amazon CloudWatch Agent 1.300042.1 (2024-07-16)
 ========================================================================
 Bug Fixes:
@@ -112,7 +166,7 @@ Enhancements:
 * [AppSignals] Improve Kubernetes support
 
 ========================================================================
-Amazon CloudWatch Agent 1.300033.0 (2023-01-31)
+Amazon CloudWatch Agent 1.300033.0 (2024-01-31)
 ========================================================================
 
 Enchancements:
